@@ -240,6 +240,8 @@ internal class AppSettingsGeneralStore(private val prefs: SharedPreferences) {
     fun resetNetwork() = prefs.edit()
         .remove("proxy_auto_detected")
         .remove("proxy_type").remove("proxy_host").remove("proxy_port")
+        .remove("proxy_profiles").remove("proxy_mode").remove("proxy_active_profile_id")
+        .remove("proxy_failover_direct")
         .remove("doh_enabled").remove("doh_url").remove("doh_disable_on_vpn").remove("doh_auto_without_vpn")
         .remove("doh_servers").remove("doh_for_websites")
         .apply()
