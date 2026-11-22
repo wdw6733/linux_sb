@@ -41,9 +41,11 @@ internal fun TopicTopBar(
     onRefresh: () -> Unit,
     onToggleScrollMode: () -> Unit,
     onFavorite: () -> Unit,
+    glassProgress: Float? = null,
 ) {
     if (!searchOpen) AppTopBar(
         modifier = modifier,
+        glassProgress = glassProgress,
         title = title,
         titleContent = {
             AnimatedVisibility(visible = showTitle, enter = fadeIn(), exit = fadeOut()) {
