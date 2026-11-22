@@ -38,6 +38,7 @@ internal fun TopicPrimaryDialogs(
     coinTarget: PostEntry?,
     onCoinDismiss: () -> Unit,
     onCoin: (PostEntry, Int, String) -> Unit,
+    onOpenSourceEditor: ((String) -> Unit)? = null,
 ) {
     if (favoriteDialogOpen) {
         sb.linux.client.ui.components.feedback.AppConfirmDialog(
@@ -56,6 +57,7 @@ internal fun TopicPrimaryDialogs(
         viewModel = replyViewModel,
         onDismiss = onReplyDismiss,
         onLoad = onLoadPage,
+        onOpenSourceEditor = onOpenSourceEditor,
     )
 
     if (floorDialogOpen) {
