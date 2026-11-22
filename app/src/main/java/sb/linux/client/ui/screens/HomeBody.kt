@@ -142,9 +142,10 @@ internal fun HomeBody(
                                 state = listState,
                                 modifier = Modifier.fillMaxSize(),
                                 // 根导航由外壳 Scaffold 的 bottomBar inset 处理，列表不再叠加固定底栏留白
+                                // 首帖上下各留白 +8dp（热榜/置顶首帖分组留白）。
                                 contentPadding = PaddingValues(
-                                    top = topInset + LocalAppSpacing.current.item,
-                                    bottom = LocalAppSpacing.current.pageVertical,
+                                    top = topInset + LocalAppSpacing.current.item + 8.dp,
+                                    bottom = LocalAppSpacing.current.pageVertical + 8.dp,
                                 )
                             ) {
                                 if (pendingNewTopics.isNotEmpty()) {
@@ -173,17 +174,20 @@ internal fun HomeBody(
                                         }
                                     }
                                 }
-                                items(
+                                itemsIndexed(
                                     pagedTopics,
-                                    key = { t -> t.topicId },
-                                    contentType = { "topic-card" },
-                                ) { t ->
-                                    TopicCardView(
-                                        t,
-                                        views = viewsForTopic(t.topicId),
-                                        onClick = { nav.navigate("topic/${t.topicId}?p=1") },
-                                        onForumClick = { fid -> if (fid > 0) nav.navigate("forum/$fid") },
-                                    )
+                                    key = { _, t -> t.topicId },
+                                    contentType = { _, _ -> "topic-card" },
+                                ) { index, t ->
+                                    // 首次加载前 6 张卡片淡入 + 上升 10px，小 stagger，之后不再触发。
+                                    Box(Modifier.homeCardEnter(index)) {
+                                        TopicCardView(
+                                            t,
+                                            views = viewsForTopic(t.topicId),
+                                            onClick = { nav.navigate("topic/${t.topicId}?p=1") },
+                                            onForumClick = { fid -> if (fid > 0) nav.navigate("forum/$fid") },
+                                        )
+                                    }
                                 }
                                 if (homeInfinite) {
                                     item {
@@ -246,4 +250,28 @@ internal fun HomeBody(
                     )
                 }
             }
+}
+
+/**
+ * 首页列表首次加载入场：前 6 项淡入 + 上升 10px，间隔 50ms；滚动复用与后续加载不再触发。
+ * 只动画 alpha/位移，不动画尺寸与模糊。
+ */
+@Composable
+private fun Modifier.homeCardEnter(index: Int): Modifier {
+    if (index >= UnslopMotion.MaxStaggerItems) return this
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
+    val progress by animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = UnslopMotion.EnterMs,
+            delayMillis = index * UnslopMotion.StaggerMs,
+            easing = UnslopEasing,
+        ),
+        label = "homeCardEnter",
+    )
+    return graphicsLayer {
+        alpha = progress
+        translationY = (1f - progress) * 10.dp.toPx()
+    }
 }
