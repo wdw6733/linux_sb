@@ -41,17 +41,21 @@ internal class AndroidVerificationWebRepository(
                 var navigation = 0
                 var pageReady = false
                 var failed = false
+                // 只记录 HTTP 状态，不永久置 pageReady=false：挑战页本身就是 403，
+                // 等它在原地通过 JS 完成挑战后，STATE_SCRIPT 仍会返回 ready。
+                var httpErrorCode = 0
                 view.webViewClient = object : WebViewClient() {
                     override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
                         navigation++
                         pageReady = false
                         failed = false
+                        httpErrorCode = 0
                     }
                     override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                         if (request.isForMainFrame) { failed = true; pageReady = false }
                     }
                     override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
-                        if (request.isForMainFrame && response.statusCode >= 400) { failed = true; pageReady = false }
+                        if (request.isForMainFrame && response.statusCode >= 400) { httpErrorCode = response.statusCode }
                     }
                     override fun onPageFinished(view: WebView, url: String) {
                         val uri = Uri.parse(url)
