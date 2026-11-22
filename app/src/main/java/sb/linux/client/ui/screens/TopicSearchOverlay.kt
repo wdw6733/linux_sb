@@ -76,8 +76,9 @@ internal fun TopicSearchOverlay(
     }
     Surface(
         shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
-        tonalElevation = 8.dp,
-        shadowElevation = 12.dp,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
         modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp),
     ) {
         Column(
