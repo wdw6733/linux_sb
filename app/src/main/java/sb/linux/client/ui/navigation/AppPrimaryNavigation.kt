@@ -1,6 +1,12 @@
 package sb.linux.client.ui.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
@@ -10,14 +16,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import sb.linux.client.ui.theme.LocalGlassBackdrop
+import sb.linux.client.ui.theme.glassBar
 import sb.linux.client.ui.theme.LocalAppSizes
 import sb.linux.client.ui.theme.LocalAppSpacing
 
@@ -36,21 +50,42 @@ internal fun AppBottomNavigation(
     selectedId: String,
     onSelect: (String) -> Unit,
 ) {
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-        destinations.forEach { destination ->
-            val selected = destination.id == selectedId
-            NavigationBarItem(
-                selected = selected,
-                onClick = { onSelect(destination.id) },
-                icon = {
-                    Icon(
-                        if (selected) destination.selectedIcon else destination.unselectedIcon,
-                        contentDescription = null,
-                    )
-                },
-                // 标签就是无障碍名称，图标不重复朗读。
-                label = { Text(destination.label) },
-            )
+    val scheme = MaterialTheme.colorScheme
+    Box {
+        NavigationBar(
+            modifier = Modifier.glassBar(
+                backdrop = LocalGlassBackdrop.current,
+                alpha = 0.82f,
+                surface = scheme.surfaceContainer,
+            ),
+            containerColor = Color.Transparent,
+            tonalElevation = 0.dp,
+        ) {
+            destinations.forEach { destination ->
+                val selected = destination.id == selectedId
+                NavigationBarItem(
+                    selected = selected,
+                    onClick = { onSelect(destination.id) },
+                    icon = {
+                        Icon(
+                            if (selected) destination.selectedIcon else destination.unselectedIcon,
+                            contentDescription = null,
+                        )
+                    },
+                    // 标签就是无障碍名称，图标不重复朗读。
+                    label = { Text(destination.label) },
+                    // 选中态：MD3 pill 改为表面台阶。
+                    colors = NavigationBarItemDefaults.colors(selectedIndicatorColor = scheme.surfaceContainerHighest),
+                )
+            }
+        }
+        // 选中项顶部 2dp accent 细线（与顶栏信号细线同一语义）。
+        Row(Modifier.fillMaxWidth().align(Alignment.TopCenter)) {
+            destinations.forEach { destination ->
+                Box(Modifier.weight(1f).height(2.dp)) {
+                    if (destination.id == selectedId) Box(Modifier.fillMaxSize().background(scheme.primary))
+                }
+            }
         }
     }
 }
@@ -63,9 +98,15 @@ internal fun AppNavigationRail(
     header: @Composable ColumnScope.() -> Unit = {},
 ) {
     val sizes = LocalAppSizes.current
+    val scheme = MaterialTheme.colorScheme
     NavigationRail(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxHeight().width(sizes.railWidth),
+        containerColor = Color.Transparent,
+        modifier = Modifier.fillMaxHeight().width(sizes.railWidth)
+            .glassBar(
+                backdrop = LocalGlassBackdrop.current,
+                alpha = 0.82f,
+                surface = scheme.surfaceContainer,
+            ),
         header = header,
     ) {
         // 宽窗账号入口固定在侧栏底部，其余目的地保留用户顺序。
@@ -73,17 +114,26 @@ internal fun AppNavigationRail(
             destinations.filter { it.id == AppDestinations.me.id }).forEach { destination ->
             if (destination.id == AppDestinations.me.id) Spacer(Modifier.weight(1f))
             val selected = destination.id == selectedId
-            NavigationRailItem(
-                selected = selected,
-                onClick = { onSelect(destination.id) },
-                icon = {
-                    Icon(
-                        if (selected) destination.selectedIcon else destination.unselectedIcon,
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(destination.label, style = MaterialTheme.typography.labelMedium) },
-            )
+            Box(Modifier.fillMaxWidth()) {
+                NavigationRailItem(
+                    selected = selected,
+                    onClick = { onSelect(destination.id) },
+                    icon = {
+                        Icon(
+                            if (selected) destination.selectedIcon else destination.unselectedIcon,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text(destination.label, style = MaterialTheme.typography.labelMedium) },
+                    // 选中态：MD3 pill 改为表面台阶。
+                    colors = NavigationRailItemDefaults.colors(indicatorColor = scheme.surfaceContainerHighest),
+                )
+                // 选中项顶部 2dp accent 细线。
+                if (selected) Box(
+                    Modifier.align(Alignment.TopCenter).width(24.dp).height(2.dp)
+                        .background(scheme.primary, RoundedCornerShape(1.dp))
+                )
+            }
         }
     }
 }
