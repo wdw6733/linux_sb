@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 /** Compose-observable owner for the application appearance and typography snapshot. */
 internal class SessionThemeState {
     var themeMode by mutableStateOf(ThemeModePref.SYSTEM)
-    var dynamicColor by mutableStateOf(true)
+    var dynamicColor by mutableStateOf(false)
     var themeColorKey by mutableStateOf("default")
     var oledDark by mutableStateOf(false)
     var themeStyle by mutableStateOf(0)
