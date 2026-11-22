@@ -164,6 +164,18 @@ fun WebScreen(
                                     ?: "网页加载失败"
                             }
                         }
+
+                        override fun onReceivedHttpAuthRequest(
+                            view: android.webkit.WebView,
+                            handler: android.webkit.HttpAuthHandler,
+                            host: String?,
+                            realm: String?,
+                        ) {
+                            // 带认证的代理 407：用生效 profile 的账号密码通过；不是代理时默认处理。
+                            if (!sb.linux.client.platform.webview.ProxyAuthHandler.handle(handler, host)) {
+                                super.onReceivedHttpAuthRequest(view, handler, host, realm)
+                            }
+                        }
                         override fun shouldOverrideUrlLoading(
                             view: android.webkit.WebView,
                             request: android.webkit.WebResourceRequest,
