@@ -28,6 +28,10 @@ internal fun TopicScreenDialogs(
         replyText = ui.quoteText,
         onReplyDismiss = { ui.showReply = false },
         onLoadPage = { actions.load(it, append = true, force = true) },
+        onOpenSourceEditor = { quote ->
+            ui.showReply = false
+            nav.navigate("replyTopic/$topicId?quote=${android.net.Uri.encode(quote)}")
+        },
         favoriteDialogOpen = ui.showUnfavDialog,
         onFavoriteDialogDismiss = { ui.showUnfavDialog = false },
         onUnfavorite = { ui.showUnfavDialog = false; actions.toggleFavorite() },
