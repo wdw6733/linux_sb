@@ -15,6 +15,7 @@ internal class AppNetworkWebViewDohRepository : WebViewDohNetworkRepository {
             dohActive = !proxy.enabled && AppNetwork.isDohActive(),
             dohUrl = context?.let { AppSettings(it).dohUrl }.orEmpty(),
             forWebsites = context?.let { AppSettings(it).dohForWebsites } ?: true,
+            proxyProfile = AppNetwork.activeProxyProfile(),
         )
     }
 
