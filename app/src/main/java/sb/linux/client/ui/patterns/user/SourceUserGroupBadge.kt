@@ -1,7 +1,8 @@
 package sb.linux.client.ui.patterns.user
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import sb.linux.client.ui.theme.desaturate
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,9 +33,9 @@ internal fun SourceUserGroupBadge(badge: UserGroupBadge, modifier: Modifier = Mo
         return runCatching { Color(android.graphics.Color.parseColor(raw ?: fallback)) }
             .getOrElse { Color(android.graphics.Color.parseColor(fallback)) }
     }
-    Surface(shape = CircleShape, color = color("bg", colors.second), modifier = modifier) {
-        Text(badge.name, Modifier.padding(horizontal = 7.dp, vertical = 1.dp),
+    Surface(shape = RoundedCornerShape(6.dp), color = desaturate(color("bg", colors.second)), modifier = modifier) {
+        Text(badge.name, Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Normal,
-            color = color("color", colors.first))
+            color = desaturate(color("color", colors.first)))
     }
 }
