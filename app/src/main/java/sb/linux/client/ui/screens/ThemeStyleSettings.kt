@@ -14,13 +14,14 @@ import sb.linux.client.ui.session.Session
 import sb.linux.client.ui.theme.PaletteStyles
 import sb.linux.client.ui.theme.colorSeed
 import sb.linux.client.ui.theme.paletteStyleLabel
+import com.materialkolor.PaletteStyle
 
 internal fun LazyListScope.themeStyleSettings(session: Session, dark: Boolean) {
     item { GroupLabel("调色风格", searchable = false) }
     item {
         var selecting by remember { mutableStateOf(false) }
         SettingsListRow("调色风格", "预览同一主题色的不同配色方案", onClick = { selecting = true }, trailing = {
-            Text(paletteStyleLabel(PaletteStyles.first { it.ordinal == session.themeStyle }),
+            Text(paletteStyleLabel(PaletteStyles.firstOrNull { it.ordinal == session.themeStyle } ?: PaletteStyle.TonalSpot),
                 color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
         })
         if (selecting) AlertDialog(onDismissRequest = { selecting = false }, title = { Text("调色风格") },
