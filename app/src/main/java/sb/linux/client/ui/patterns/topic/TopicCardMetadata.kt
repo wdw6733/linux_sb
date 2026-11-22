@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import sb.linux.client.domain.topic.TopicCard
@@ -28,7 +29,7 @@ internal fun TopicCardMetadata(
 ) {
     if (separateAuthor) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            MetadataItem(null, card.authorName, userColor ?: MaterialTheme.colorScheme.primary,
+            MetadataItem(null, card.authorName, userColor ?: MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.fillMaxWidth(),
                 onClick = onElementClick?.let { { it(CardColorOverrides.USER) } },
                 suffix = card.titleBadge?.let { badge -> { TitleBadgeView(badge, small = true) } })
@@ -53,7 +54,7 @@ private fun TopicCardDetails(
     ) {
         Row(Modifier.weight(1f, fill = false), horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            if (includeAuthor) MetadataItem(Icons.Filled.PersonOutline, card.authorName, userColor ?: MaterialTheme.colorScheme.primary,
+            if (includeAuthor) MetadataItem(Icons.Filled.PersonOutline, card.authorName, userColor ?: MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f, fill = false),
                 onClick = onElementClick?.let { { it(CardColorOverrides.USER) } },
                 suffix = card.titleBadge?.let { badge -> { TitleBadgeView(badge, small = true) } })
@@ -62,25 +63,26 @@ private fun TopicCardDetails(
                 modifier = Modifier.weight(1f, fill = false),
                 onClick = { if (onElementClick != null) onElementClick(CardColorOverrides.FORUM) else onForumClick(card.forumId) })
             if (showComments) MetadataItem(Icons.AutoMirrored.Filled.Chat, card.replies.toString(),
-                commentsColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                commentsColor ?: MaterialTheme.colorScheme.onSurfaceVariant, monospace = true,
                 onClick = onElementClick?.let { { it(CardColorOverrides.COMMENTS) } })
             if (showComments && card.lastReplier.isNotBlank()) MetadataItem(if (includeAuthor) Icons.Filled.PersonOutline else null, card.lastReplier,
                 userColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f, fill = false))
         }
         if (card.timeText.isNotBlank()) MetadataItem(Icons.Filled.Schedule, card.timeText,
-            timeColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
+            timeColor ?: MaterialTheme.colorScheme.onSurfaceVariant, monospace = true,
             onClick = onElementClick?.let { { it(CardColorOverrides.TIME) } })
     }
 }
 
 @Composable
 private fun MetadataItem(icon: ImageVector?, text: String, color: Color, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null,
-    suffix: (@Composable () -> Unit)? = null) {
+    suffix: (@Composable () -> Unit)? = null, monospace: Boolean = false) {
     Row(modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        if (icon != null) Icon(icon, null, Modifier.size(12.dp), tint = color)
-        Text(text, style = MaterialTheme.typography.labelSmall, color = color,
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (icon != null) Icon(icon, null, Modifier.size(16.dp), tint = color)
+        Text(text, style = if (monospace) MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontFeatureSettings = "tnum")
+            else MaterialTheme.typography.labelSmall, color = color,
             maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
         if (suffix != null) Box(Modifier.weight(1f, fill = false)) { suffix() }
     }
