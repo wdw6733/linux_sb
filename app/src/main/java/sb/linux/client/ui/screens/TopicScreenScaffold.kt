@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import sb.linux.client.ui.theme.LocalGlassBackdrop
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +35,9 @@ internal fun TopicScreenScaffold(
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
+    // 顶栏玻璃背板：捕获帖子列表层，顶栏 overlay 是兄弟，直接画模糊背板。
+    val topicBackdropBg = MaterialTheme.colorScheme.background
+    val topicBackdrop = rememberLayerBackdrop { drawRect(topicBackdropBg); drawContent() }
     val page = view.page
     val mainPost = view.mainPost
     BackHandler(ui.topicSearchOpen) {
@@ -85,6 +92,7 @@ internal fun TopicScreenScaffold(
             }
         },
     ) { padding ->
+        CompositionLocalProvider(LocalGlassBackdrop provides topicBackdrop) {
         Box(Modifier.fillMaxSize()) {
             TopicScreenBodyContent(
                 padding = padding,
@@ -98,7 +106,7 @@ internal fun TopicScreenScaffold(
                 paging = paging,
                 actions = actions,
                 view = view,
-                listModifier = Modifier,
+                listModifier = Modifier.layerBackdrop(topicBackdrop),
             )
             TopicScreenTopBarOverlay(
                 session = session,
@@ -113,6 +121,7 @@ internal fun TopicScreenScaffold(
                 context = context,
                 clipboard = clipboard,
             )
+        }
         }
     }
     TopicScreenDialogs(
