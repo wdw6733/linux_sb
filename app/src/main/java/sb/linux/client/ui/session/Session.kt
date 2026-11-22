@@ -97,6 +97,7 @@ class Session(app: Application) : AndroidViewModel(app), SessionState by Session
     internal val dohSettingsRepository: DohSettingsRepository get() = repositories.dohSettingsRepository
     internal val proxyDetectionRepository: ProxyDetectionRepository get() = repositories.proxyDetectionRepository
     internal val proxySettingsRepository: ProxySettingsRepository get() = repositories.proxySettingsRepository
+    internal val proxyProfileRepository: sb.linux.client.domain.network.ProxyProfileRepository get() = repositories.proxyProfileRepository
     internal val networkRecoveryRepository: NetworkRecoveryRepository get() = repositories.networkRecoveryRepository
     internal val webDavBackupRepository: WebDavBackupRepository get() = repositories.webDavBackupRepository
     internal val backupSettingsRepository: BackupSettingsRepository get() = repositories.backupSettingsRepository
