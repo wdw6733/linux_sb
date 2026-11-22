@@ -20,7 +20,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import sb.linux.client.domain.topic.TopicCard
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.graphicsLayer
+import sb.linux.client.ui.theme.LocalAppSizes
+import sb.linux.client.ui.theme.LocalAppSpacing
 import sb.linux.client.ui.theme.LocalSurfaceOpacity
+import sb.linux.client.ui.theme.UnslopEasing
+import sb.linux.client.ui.theme.UnslopMotion
+import sb.linux.client.ui.theme.desaturate
 
 /**
  * 帖子卡片（沿用 main 分支样式）：圆角卡片容器，左侧头像，中间标题与元信息，
@@ -42,9 +53,10 @@ fun TopicCardView(
     onElementClick: ((key: String) -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
+    // 源站标题色保留在内容区，降饱和 20% 后再用。
     val titleColor = remember(card.titleColor) {
         runCatching { Color(android.graphics.Color.parseColor(card.titleColor)) }
-            .getOrNull()?.takeIf { card.titleColor.isNotBlank() }
+            .getOrNull()?.takeIf { card.titleColor.isNotBlank() }?.let { desaturate(it) }
     }
     // 外观设置-实时预览的自定义元素颜色（未覆盖时跟随主题）
     val cardColors = LocalCardColorOverrides.current
@@ -55,15 +67,26 @@ fun TopicCardView(
     val commentsOverride = cardColors[CardColorOverrides.COMMENTS]
     val forumOverride = cardColors[CardColorOverrides.FORUM]
 
+    // 按压缩放 0.98（反馈时长 150ms，唯一缓动）。
+    val pressSource = remember { MutableInteractionSource() }
+    val pressed by pressSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.98f else 1f,
+        animationSpec = tween(UnslopMotion.FeedbackMs, easing = UnslopEasing),
+        label = "cardPress",
+    )
+
     Surface(
         shape = MaterialTheme.shapes.large,
         color = (bgOverride ?: MaterialTheme.colorScheme.surfaceContainerLow)
             .copy(alpha = LocalSurfaceOpacity.current),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 5.dp)
+            .padding(horizontal = LocalAppSpacing.current.pageHorizontal, vertical = LocalAppSpacing.current.inline)
+            .graphicsLayer { scaleX = pressScale; scaleY = pressScale }
             .clip(MaterialTheme.shapes.large)
             .combinedClickable(
+                interactionSource = pressSource,
                 onClick = {
                     // 预览改色模式：点按卡片空白处改背景色；正常模式打开帖子
                     if (onElementClick != null) onElementClick(CardColorOverrides.BACKGROUND)
@@ -73,13 +96,13 @@ fun TopicCardView(
             ),
     ) {
         if (sb.linux.client.ui.LocalTopicCardAvatarMetadataRow.current) {
-            Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
+            Column(Modifier.padding(LocalAppSpacing.current.contentGap)) {
                 TopicCardTitle(card, titleColor, tagColor,
                     onElementClick?.let { { it(CardColorOverrides.TAG) } })
                 Spacer(Modifier.size(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (!compact) {
-                        sb.linux.client.ui.patterns.user.UserAvatar(card.authorId, card.avatarUrl, 34, online = card.online)
+                        sb.linux.client.ui.patterns.user.UserAvatar(card.authorId, card.avatarUrl, LocalAppSizes.current.avatarReply.value.toInt(), online = card.online)
                         Spacer(Modifier.width(10.dp))
                     }
                     Box(Modifier.weight(1f)) {
@@ -88,9 +111,9 @@ fun TopicCardView(
                     }
                 }
             }
-        } else Row(Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
+        } else Row(Modifier.padding(LocalAppSpacing.current.contentGap)) {
             if (!compact) {
-                sb.linux.client.ui.patterns.user.UserAvatar(card.authorId, card.avatarUrl, 34, online = card.online)
+                sb.linux.client.ui.patterns.user.UserAvatar(card.authorId, card.avatarUrl, LocalAppSizes.current.avatarReply.value.toInt(), online = card.online)
                 Spacer(Modifier.width(10.dp))
             }
             Column(Modifier.weight(1f)) {
