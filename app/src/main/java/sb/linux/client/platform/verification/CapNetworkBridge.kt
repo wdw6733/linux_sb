@@ -21,6 +21,7 @@ internal class CapNetworkBridge(
     endpoint: String,
     private val pageUrl: String,
     private val evaluateJavascript: (String) -> Unit,
+    private val onError: (String) -> Unit = {},
 ) : Closeable {
     private val endpointUrl = endpoint.toHttpUrlOrNull()
     private val pageOrigin = pageUrl.toHttpUrlOrNull()?.let {
@@ -36,6 +37,8 @@ internal class CapNetworkBridge(
         if (closed.get()) return
         val target = allowedTarget(url)
         if (target == null || method.uppercase() != "POST") {
+            // 拒绝也要走可见错误：只回 JS 回调时组件页可能不展示，验证区会一直空转。
+            onError("验证码请求被拒绝")
             complete(requestId, errorResult("验证码请求被拒绝"))
             return
         }
@@ -115,6 +118,7 @@ internal class CapNetworkBridge(
                 TimeUnit.MILLISECONDS,
             )
         } else {
+            onError("验证码服务连接失败")
             complete(requestId, errorResult("验证码服务连接失败", networkFailureDetail(error)))
         }
     }
