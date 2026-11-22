@@ -34,10 +34,12 @@ internal class AccountVerificationGateway(
     fun createBridge(
         verification: LoginVerification.Cap,
         evaluateJavascript: (String) -> Unit,
+        onError: (String) -> Unit = {},
     ): CapNetworkBridge = CapNetworkBridge(
         network = network,
         endpoint = verification.endpoint,
         pageUrl = verification.pageUrl,
         evaluateJavascript = evaluateJavascript,
+        onError = onError,
     )
 }
