@@ -43,7 +43,10 @@ internal class TopicReplyService(private val client: LsbClient) : TopicReplyRepo
         }
         val response = client.postForm(protocol.action, form)
         if (response.code !in 200..299 || response.url.contains("form_error") || response.url.contains("/login")) {
-            val replacement = if (captcha == null) null else try {
+            // 提交失败（form_error）时总刷新一次验证码：captcha==null 也可能是
+            // 解析时没抓到验证组件，而不是源站不需要验证；刷新不到才返回 null，
+            // 上层据此显示“未加载到人机验证”而不是静默放行。
+            val replacement = try {
                 refreshCaptcha(topicId, page?.page ?: 1)
             } catch (cancelled: CancellationException) {
                 throw cancelled
