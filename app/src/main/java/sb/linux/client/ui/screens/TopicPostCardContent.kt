@@ -151,7 +151,7 @@ internal fun PostCardContent(
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Chat, null,
-                        Modifier.size(13.dp),
+                        Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Text(
@@ -165,7 +165,7 @@ internal fun PostCardContent(
                             else ->
                                 "查看楼主对话"
                         },
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontFeatureSettings = "tnum"),
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
