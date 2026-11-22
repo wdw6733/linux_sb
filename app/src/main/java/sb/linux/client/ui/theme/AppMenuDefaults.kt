@@ -16,7 +16,7 @@ object AppMenuDefaults {
     val cardShape = RoundedCornerShape(16.dp)
 
     /** 分组标签内边距 */
-    val labelPadding = PaddingValues(start = 12.dp, top = 10.dp, bottom = 2.dp)
+    val labelPadding = PaddingValues(start = 12.dp, top = 24.dp, bottom = 8.dp)
 
     /** 常规菜单行内边距 */
     val rowPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
