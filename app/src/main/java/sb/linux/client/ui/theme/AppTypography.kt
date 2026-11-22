@@ -34,7 +34,7 @@ private fun baseTypography(): Typography = Typography(
     bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal),
     labelLarge = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium),
     labelMedium = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
-    labelSmall = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
+    labelSmall = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
 )
 
 /** 默认全文字重不额外 +100；只有用户显式选择字重档位时才叠加。 */
@@ -46,7 +46,7 @@ private fun TextStyle.styled(family: FontFamily?, weightDelta: Int) = copy(
 
 internal fun appTypography(fontFamily: FontFamily?, weightLevel: Int): Typography {
     val t = baseTypography()
-    val delta = weightLevel.coerceIn(-3, 2) * 100
+    val delta = weightLevel.coerceIn(-3, 1) * 100
     fun TextStyle.adjusted() = styled(fontFamily, delta)
     return t.copy(
         displayLarge = t.displayLarge.adjusted(), displayMedium = t.displayMedium.adjusted(),
@@ -78,7 +78,7 @@ data class AppReadingType(
 )
 
 internal fun appReadingType(fontFamily: FontFamily?, weightLevel: Int): AppReadingType {
-    val delta = weightLevel.coerceIn(-3, 2) * 100
+    val delta = weightLevel.coerceIn(-3, 1) * 100
     fun reading(size: Int, line: Int, weight: FontWeight, family: FontFamily? = fontFamily) = TextStyle(
         fontFamily = family,
         fontSize = size.sp,
