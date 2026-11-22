@@ -132,6 +132,9 @@ internal class SessionRepositories(
     internal val dohSettingsRepository: DohSettingsRepository by lazy { DohSettingsRepositoryImpl(settings) }
     internal val proxyDetectionRepository: ProxyDetectionRepository by lazy { AppProxyDetectionRepository() }
     internal val proxySettingsRepository: ProxySettingsRepository by lazy { AppSettingsProxySettingsRepository(settings) }
+    internal val proxyProfileRepository: sb.linux.client.domain.network.ProxyProfileRepository by lazy {
+        sb.linux.client.data.ProxyProfileRepositoryImpl(session.getApplication<android.app.Application>())
+    }
     internal val networkRecoveryRepository: NetworkRecoveryRepository get() = AppNetworkRecoveryRepository
     internal val webDavBackupRepository: WebDavBackupRepository by lazy { WebDavClient() }
     internal val backupSettingsRepository: BackupSettingsRepository by lazy {
