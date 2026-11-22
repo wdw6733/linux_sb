@@ -15,6 +15,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
@@ -160,7 +161,9 @@ fun LsbTheme(
         ) {
             if (wallpaper == null) content()
             else Box(Modifier.fillMaxSize().background(finalScheme.background)) {
-                Image(wallpaper, contentDescription = null, modifier = Modifier.fillMaxSize(),
+                Image(wallpaper, contentDescription = null, modifier = Modifier.fillMaxSize()
+                    // 壁纸视差：随顶栏滚动进度下移，约 64dp 滚动 × 0.3。
+                    .graphicsLayer { translationY = GlassScroll.progress * 19f * density },
                     contentScale = ContentScale.Crop, alpha = backgroundImageOpacity.coerceIn(0.05f, 0.65f))
                 content()
             }
