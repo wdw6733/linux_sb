@@ -150,6 +150,17 @@ internal fun PowVerificationWidget(
                                 override fun onReceivedError(view: WebView, request: WebResourceRequest, cause: WebResourceError) {
                                     if (request.isForMainFrame || coreResource(request)) failed("验证组件加载失败（" + cause.errorCode + "），请重新加载")
                                 }
+                                override fun onReceivedHttpAuthRequest(
+                                    view: WebView,
+                                    handler: android.webkit.HttpAuthHandler,
+                                    host: String?,
+                                    realm: String?,
+                                ) {
+                                    if (!sb.linux.client.platform.webview.ProxyAuthHandler.handle(handler, host)) {
+                                        super.onReceivedHttpAuthRequest(view, handler, host, realm)
+                                    }
+                                }
+                                }
                                 override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
                                     if (coreResource(request)) failed("验证资源返回 HTTP " + response.statusCode + "，请重新加载")
                                 }
