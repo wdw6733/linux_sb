@@ -15,7 +15,7 @@ internal class SessionPreferenceLoader(
         session.themeMode = ThemeModePref.entries.getOrElse(prefs.getInt("theme_mode", 0)) {
             ThemeModePref.SYSTEM
         }
-        session.dynamicColor = prefs.getBoolean("dynamic_color", true)
+        session.dynamicColor = prefs.getBoolean("dynamic_color", false)
         session.themeColorKey = prefs.getString("theme_color", "default") ?: "default"
         session.oledDark = prefs.getBoolean("oled_dark", false)
         session.themeStyle = prefs.getInt("theme_style", 0)
