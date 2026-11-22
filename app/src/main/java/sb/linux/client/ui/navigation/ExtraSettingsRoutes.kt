@@ -26,6 +26,7 @@ internal fun NavGraphBuilder.extraSettingsRoutes(session: Session, nav: NavHostC
     settingsComposable("browseInteraction") { BrowseSettingsDetailScreen(session, nav, "interaction") }
     settingsComposable("browseSidebar") { BrowseSettingsDetailScreen(session, nav, "sidebar") }
     settingsComposable("networkProxy") { NetworkSettingsDetailScreen(session, nav, "proxy") }
+    settingsComposable("proxyProfiles") { ProxyProfilesScreen(session, nav) }
     settingsComposable("networkDns") { NetworkSettingsDetailScreen(session, nav, "dns") }
     settingsComposable("networkLinks") { NetworkSettingsDetailScreen(session, nav, "links") }
     settingsComposable("aiBehavior") { AiSettingsDetailScreen(session, nav, "behavior") }
