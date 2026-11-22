@@ -52,6 +52,7 @@ object AppNetwork {
         if (key == null || key in setOf(
                 "doh_enabled", "doh_url", "doh_disable_on_vpn", "doh_auto_without_vpn", "doh_for_websites",
                 "proxy_type", "proxy_host", "proxy_port", "source_domain",
+                "proxy_profiles", "proxy_mode", "proxy_active_profile_id", "proxy_failover_direct",
             )) {
             invalidate()
             if (key == "doh_auto_without_vpn") scheduleAutomaticDoh()
@@ -128,10 +129,32 @@ object AppNetwork {
         return !proxyConfig().enabled && settings.dohEnabled && !(settings.dohDisableOnVpn && isVpnActive(context))
     }
 
+    /** 当前生效的代理 profile（AUTO 按内外网环境解析，MANUAL 锁定，OFF 为空）。 */
+    fun activeProxyProfile(): sb.linux.client.domain.network.ProxyProfile? {
+        val context = appContext ?: return null
+        return ProxyRouter.resolveActive(context)
+    }
+
+    /** 同环境的候选 profile（priority 升序，已排除近期连续失败的）。 */
+    fun proxyCandidates(): List<sb.linux.client.domain.network.ProxyProfile> {
+        val context = appContext ?: return emptyList()
+        val repo = ProxyProfileRepositoryImpl(context)
+        return ProxyRouter.usableCandidates(
+            repo.profiles(),
+            ProxyRouter.environment(context),
+            repo.mode(),
+            repo.manualProfileId(),
+        )
+    }
+
+    fun proxyFailoverDirect(): Boolean {
+        val context = appContext ?: return false
+        return ProxyProfileRepositoryImpl(context).failoverDirect()
+    }
+
     fun proxyConfig(): AppProxyConfig {
-        val context = appContext ?: return AppProxyConfig(0, "", 0)
-        val settings = AppSettings(context)
-        return AppProxyConfig(settings.proxyType, settings.proxyHost.trim(), settings.proxyPort)
+        val active = activeProxyProfile() ?: return AppProxyConfig(0, "", 0)
+        return AppProxyConfig(active.legacyType, active.host.trim(), active.port)
     }
 
     fun detectProxyOnOpen() {
@@ -143,7 +166,7 @@ object AppNetwork {
     /** 扫描常见本地端口并做协议握手，不依赖代理软件包名或系统 VPN 状态。 */
     suspend fun detectLocalProxy(preferredPort: Int? = null): AppProxyConfig? = coroutineScope {
         val ports = listOfNotNull(preferredPort?.takeIf { it in 1..65535 }) +
-            listOf(7890, 7891, 1080, 10808, 10809, 20170, 2080, 8080, 8888, 9090)
+            listOf(7890, 7891, 1080, 10808, 10809, 57081, 20170, 2080, 8080, 8888, 9090)
         ports.distinct().map { port ->
             async(Dispatchers.IO) {
                 when {
@@ -157,15 +180,46 @@ object AppNetwork {
 
     private val dynamicProxySelector = object : ProxySelector() {
         override fun select(uri: URI?): List<Proxy> {
-            val config = proxyConfig()
-            return listOf(if (config.enabled) config.asJavaProxy() else Proxy.NO_PROXY)
+            val candidates = proxyCandidates()
+            if (candidates.isNotEmpty()) {
+                return candidates.map { profile ->
+                    Proxy(
+                        if (profile.type == sb.linux.client.domain.network.ProxyType.SOCKS5) Proxy.Type.SOCKS
+                        else Proxy.Type.HTTP,
+                        InetSocketAddress.createUnresolved(profile.host, profile.port),
+                    )
+                }
+            }
+            // 候选耗尽：默认失败关闭，不直连；只有用户显式开了直连回退才放行。
+            if (proxyFailoverDirect()) return listOf(Proxy.NO_PROXY)
+            val active = activeProxyProfile()
+            if (active != null) {
+                return listOf(
+                    Proxy(
+                        if (active.type == sb.linux.client.domain.network.ProxyType.SOCKS5) Proxy.Type.SOCKS
+                        else Proxy.Type.HTTP,
+                        InetSocketAddress.createUnresolved(active.host, active.port),
+                    ),
+                )
+            }
+            return listOf(Proxy.NO_PROXY)
         }
 
-        override fun connectFailed(uri: URI?, sa: SocketAddress?, ioe: java.io.IOException?) = Unit
+        override fun connectFailed(uri: URI?, sa: SocketAddress?, ioe: java.io.IOException?) {
+            // 按 host:port 找到失败的 profile 记一次；同环境按 priority 试下一个候选。
+            val address = sa as? InetSocketAddress ?: return
+            val candidates = proxyCandidates()
+            candidates.firstOrNull { it.host == address.hostString && it.port == address.port }
+                ?.let { ProxyRouter.recordFailure(it.id) }
+                ?: activeProxyProfile()
+                    ?.takeIf { it.host == address.hostString && it.port == address.port }
+                    ?.let { ProxyRouter.recordFailure(it.id) }
+        }
     }
 
     private fun invalidate() {
         generation.incrementAndGet()
+        ProxyRouter.invalidateCache()
         runtimeDohUrl.set(null)
         CronetTransport.invalidate()
         // 设置监听器在主线程回调；evictAll/close 会写 socket（TLS close_notify），
@@ -234,6 +288,19 @@ object AppNetwork {
      */
     fun clientBuilder(): OkHttpClient.Builder = OkHttpClient.Builder().dns(dns).connectionPool(connectionPool)
         .proxySelector(dynamicProxySelector)
+        .proxyAuthenticator { _, response ->
+            // HTTP/HTTPS 代理 407：用生效 profile 的账号密码回一个 Basic；
+            // 已带过 Proxy-Authorization 或 profile 无认证时不再试，避免死循环。
+            val profile = activeProxyProfile()
+            if (profile == null || !profile.hasAuth) return@proxyAuthenticator null
+            if (response.request.header("Proxy-Authorization") != null) return@proxyAuthenticator null
+            response.request.newBuilder()
+                .header(
+                    "Proxy-Authorization",
+                    okhttp3.Credentials.basic(profile.username, profile.password),
+                )
+                .build()
+        }
         .addInterceptor { chain ->
             kotlinx.coroutines.runBlocking { awaitProxyDetection() }
             chain.proceed(chain.request())
