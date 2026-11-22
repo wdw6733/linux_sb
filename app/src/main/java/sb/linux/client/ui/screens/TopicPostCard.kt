@@ -6,7 +6,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.*
 import androidx.compose.foundation.text.*
 import androidx.compose.foundation.text.selection.*
@@ -28,6 +28,8 @@ import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.*
 import sb.linux.client.ui.*
+import sb.linux.client.ui.theme.UnslopEasing
+import sb.linux.client.ui.theme.UnslopMotion
 import sb.linux.client.ui.theme.*
 import sb.linux.client.ui.content.*
 import sb.linux.client.ui.patterns.topic.*
@@ -110,7 +112,7 @@ fun PostCard(
                 protectSurface -> MaterialTheme.colorScheme.surface
                 else -> Color.Transparent
             },
-            animationSpec = tween(400),
+            animationSpec = tween(durationMillis = UnslopMotion.FeedbackMs, easing = UnslopEasing),
             label = "postBg"
         )
         Column(
@@ -149,11 +151,11 @@ fun PostCard(
 }
 
 /** 帖内统一徽章胶囊：UID / 楼主 / 头衔（组别）/ 称号共用同一规格，
- *  labelSmall 字号 · 16dp 最小高度 · 45% 透明背景 · 6dp/1dp 内边距，仅配色语义不同 */
+ *  labelSmall 字号 · 16dp 最小高度 · 45% 透明背景 · 6dp/2dp 内边距，仅配色语义不同 */
 @Composable
 internal fun PillBadge(text: String, fg: Color, bg: Color, modifier: Modifier = Modifier) {
     Surface(
-        shape = CircleShape,
+        shape = RoundedCornerShape(6.dp),
         color = bg.copy(alpha = 0.45f),
         modifier = modifier.heightIn(min = 16.dp)
     ) {
@@ -164,7 +166,7 @@ internal fun PillBadge(text: String, fg: Color, bg: Color, modifier: Modifier = 
             color = fg,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
 }
