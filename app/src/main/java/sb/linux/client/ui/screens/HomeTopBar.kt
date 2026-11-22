@@ -110,7 +110,7 @@ internal fun HomeTopBar(
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(42.dp)
+                                    .height(44.dp)
                             ) {
                                 Box(
                                     Modifier.fillMaxSize(),
@@ -118,7 +118,7 @@ internal fun HomeTopBar(
                                 ) {
                                     if (searchQuery.isEmpty()) {
                                         Text(
-                                            "搜索关键词",
+                                            "搜索",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                             modifier = Modifier.padding(start = 16.dp)
@@ -151,7 +151,9 @@ internal fun HomeTopBar(
                     } else {
                         AppTopBar(
                             windowInsets = WindowInsets(0, 0, 0, 0),
-                            title = "LINUX SB",
+                            // 首页 overlay 自带玻璃，本栏不再叠加。
+                            glass = false,
+                            title = "Linux SB",
                             titleContent = { HomeSortSelector(session, onSelectCombo) { nav.navigate("login") } },
                             primaryPage = true,
                             navigationIcon = if (!sb.linux.client.ui.navigation.LocalSourceSidebarInRail.current) {
@@ -221,7 +223,7 @@ internal fun HomeTopBar(
                                                 }
                                                 scope.launch { listState.scrollToItem(0) }
                                                 session.showToast(
-                                                    if (homeInfinite) "已切换为翻页模式" else "已切换为无限滚动"
+                                                    if (homeInfinite) "翻页模式" else "无限滚动"
                                                 )
                                             }
                                         )
