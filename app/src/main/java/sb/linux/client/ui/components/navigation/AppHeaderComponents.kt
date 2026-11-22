@@ -24,7 +24,7 @@ import sb.linux.client.ui.patterns.settings.SettingsChoiceMenu
 @Composable
 fun AppPageTitle(title: String, modifier: Modifier = Modifier) {
     Text(title, modifier, style = MaterialTheme.typography.headlineSmall,
-        fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 /** 当前来源为主，箭头为辅；字阶、最小触区、间距和菜单继承现有主题。 */
@@ -47,7 +47,7 @@ internal fun <T> AppPageTitleSelector(
             horizontalArrangement = Arrangement.spacedBy(LocalAppSpacing.current.inline),
         ) {
             AppPageTitle(label, Modifier.weight(1f, fill = false))
-            Icon(Icons.Filled.ArrowDropDown, description, Modifier.size(LocalAppSizes.current.icon))
+            Icon(Icons.Filled.ArrowDropDown, description, Modifier.size(18.dp))
         }
         SettingsChoiceMenu(expanded, { expanded = false }, options, selectedValue, { value ->
             expanded = false
