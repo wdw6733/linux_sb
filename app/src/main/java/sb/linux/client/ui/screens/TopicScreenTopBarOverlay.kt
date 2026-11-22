@@ -5,6 +5,10 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import sb.linux.client.ui.theme.GlassScroll
+import sb.linux.client.ui.theme.glassProgress
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipboardManager
@@ -31,7 +35,11 @@ internal fun BoxScope.TopicScreenTopBarOverlay(
     context: Context,
     clipboard: ClipboardManager,
 ) {
+    // 滚动进度驱动顶栏玻璃与信号细线（0→64dp）。
+    val glassProgress by listState.glassProgress()
+    LaunchedEffect(glassProgress) { GlassScroll.progress = glassProgress }
     TopicTopBar(
+        glassProgress = glassProgress,
         modifier = Modifier.align(Alignment.TopCenter),
         title = view.page?.title.orEmpty(),
         showTitle = view.showTitleInTopBar,
@@ -82,7 +90,7 @@ internal fun BoxScope.TopicScreenTopBarOverlay(
             paging.localReplyPage.value = 1
             ui.replyModeTick++
             scope.launch { listState.scrollToItem(0) }
-            session.showToast(if (!view.infinite) "已切换为无限滚动" else "已切换为翻页模式")
+            session.showToast(if (!view.infinite) "无限滚动" else "翻页模式")
         },
     )
 }
