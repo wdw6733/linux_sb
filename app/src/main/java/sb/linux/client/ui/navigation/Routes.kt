@@ -109,6 +109,15 @@ fun NavGraphBuilder.detailRoutes(session: Session, nav: NavHostController) {
     )) { entry -> WebScreen(session, nav, sourceUrl = "/topic/${entry.arguments?.getLong("tid")}",
         title = "管理帖子节点", initialContentSelector = "[data-node-open], .node-topic-tags, .post-content") }
     composable("newTopic") { SourceEditorScreen(session, nav) }
+    // 验证码缺失时的回复兜底：全屏源站编辑器（/topic/{tid}#reply），带引用正文。
+    composable(
+        "replyTopic/{tid}?quote={quote}",
+        arguments = listOf(
+            navArgument("tid") { type = NavType.LongType },
+            navArgument("quote") { type = NavType.StringType; defaultValue = "" },
+        ),
+    ) { entry -> SourceEditorScreen(session, nav, replyTopicId = entry.arguments?.getLong("tid") ?: 0L,
+        quote = entry.arguments?.getString("quote").orEmpty()) }
     composable("editorPage?url={url}&tid={tid}", arguments = listOf(
         navArgument("url") { type = NavType.StringType }, navArgument("tid") { type = NavType.LongType; defaultValue = 0L },
     )) { entry -> SourceEditorScreen(session, nav, editId = entry.arguments?.getLong("tid") ?: 0L,
