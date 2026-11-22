@@ -3,6 +3,7 @@ import sb.linux.client.common.network.Endpoints
 
 import android.widget.Toast
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,7 +32,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import sb.linux.client.ui.session.Session
+import sb.linux.client.ui.theme.GlassScroll
+import sb.linux.client.ui.theme.LocalGlassBackdrop
 import sb.linux.client.domain.update.UpdateInfo
 import sb.linux.client.domain.update.isNewerVersion
 import sb.linux.client.ui.feature.update.UpdateViewModel
@@ -105,6 +109,11 @@ fun AppRoot(session: Session) {
         (backStack?.destination?.route ?: "home").substringBefore("?")
     }
     val selectedId = AppDestinationId.canonical(rawRoute)
+    // 毛玻璃背板：捕获导航内容层，供底栏/rail 与二级页顶栏绘制模糊（文档模式）。
+    val glassBackdropBg = MaterialTheme.colorScheme.background
+    val glassBackdrop = rememberLayerBackdrop { drawRect(glassBackdropBg); drawContent() }
+    // 路由切换时滚动进度清零；有列表的页面随后写回自己的进度。
+    LaunchedEffect(rawRoute) { GlassScroll.progress = 0f }
     PaneLayoutMigration(
         useTwoPane = layout.useTwoPane,
         nav = nav,
@@ -175,6 +184,7 @@ fun AppRoot(session: Session) {
         LocalSmartDecode provides session.smartDecodeEnabled,
         LocalMasterNav provides (if (layout.useTwoPane) masterNav else null),
         LocalSourceSidebarInRail provides (layout.useRail && destinations.size != 2),
+        LocalGlassBackdrop provides glassBackdrop,
     ) {
         AppLinkProvider(session, linkNav) {
             val safeTop = if (session.hideStatusBar && layout.widthDp < 600) {
