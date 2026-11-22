@@ -33,7 +33,9 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.kyant.backdrop.backdrops.layerBackdrop
 import sb.linux.client.ui.session.Session
+import sb.linux.client.ui.theme.LocalGlassBackdrop
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -66,6 +68,9 @@ internal fun AppContent(
             (destination.id == AppDestinations.messages.id && rawRoute == "directMessagesRoot")
     }
     val twoItemLayout = destinations.size == 2
+    // 底栏/rail 的玻璃层：NavHost 内容挂到外壳背板上（栏与内容层是兄弟）。
+    val glassBackdrop = LocalGlassBackdrop.current
+    val glassLayer = if (glassBackdrop != null) Modifier.layerBackdrop(glassBackdrop) else Modifier
     val openSourceSidebar = {
         scope.launch {
             val targetNav = if (layout.useTwoPane) masterNav else nav
@@ -112,14 +117,14 @@ internal fun AppContent(
                         AppNavHost(
                             navController = masterNav,
                             startDestination = AppDestinations.home.route,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().then(glassLayer),
                         ) { masterRoutes(session, detailNav, homeDrawerState) }
                     }
                     VerticalDivider(Modifier.fillMaxHeight())
                     AppNavHost(
                         navController = detailNav,
                         startDestination = "detailEmpty",
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        modifier = Modifier.weight(1f).fillMaxHeight().then(glassLayer),
                     ) { detailRoutes(session, detailNav) }
                 }
             }
@@ -153,7 +158,7 @@ internal fun AppContent(
             AppNavHost(
                 navController = nav,
                 startDestination = AppDestinations.home.route,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
+                modifier = Modifier.weight(1f).fillMaxHeight().then(glassLayer),
             ) {
                 masterRoutes(session, nav, homeDrawerState)
                 detailRoutes(session, nav)
