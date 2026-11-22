@@ -9,7 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import sb.linux.client.ui.theme.desaturate
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,7 +29,7 @@ import sb.linux.client.ui.theme.sourceTitleColor
 
 @Composable
 fun Badge(text: String, bg: Color, fg: Color, small: Boolean = false, modifier: Modifier = Modifier) {
-    Surface(shape = CircleShape, color = bg, modifier = modifier) {
+    Surface(shape = RoundedCornerShape(6.dp), color = bg, modifier = modifier) {
         Text(
             text,
             style = if (small) MaterialTheme.typography.labelSmall.copy(lineHeight = 12.sp)
@@ -36,10 +37,7 @@ fun Badge(text: String, bg: Color, fg: Color, small: Boolean = false, modifier: 
             fontWeight = FontWeight.Medium,
             color = fg,
             maxLines = 1,
-            modifier = Modifier.padding(
-                horizontal = if (small) 5.dp else 7.dp,
-                vertical = if (small) 1.dp else 1.dp
-            )
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
 }
@@ -68,13 +66,13 @@ fun titleRarityColor(rarity: String, dark: Boolean = false): Pair<Color, Color> 
 fun TitleBadgeView(title: TitleBadge, modifier: Modifier = Modifier, small: Boolean = false) {
     val dark = MaterialTheme.colorScheme.background.let { it.red + it.green + it.blue < 1.5f }
     val (fallback, soft) = titleRarityColor(title.rarity, dark)
-    val fg = sourceTitleColor(title, if (dark) "dark-color" else "color", fallback, dark)
-    val bg = sourceTitleColor(title, if (dark) "dark-bg" else "bg", soft, dark)
-    val serialBg = sourceTitleColor(title, if (dark) "dark-serial-bg" else "color", fg, dark)
+    val fg = desaturate(sourceTitleColor(title, if (dark) "dark-color" else "color", fallback, dark))
+    val bg = desaturate(sourceTitleColor(title, if (dark) "dark-bg" else "bg", soft, dark))
+    val serialBg = desaturate(sourceTitleColor(title, if (dark) "dark-serial-bg" else "color", fg, dark))
     val openLink = LocalLinkHandler.current
     Surface(shape = MaterialTheme.shapes.extraSmall, color = bg,
         modifier = modifier.clickable(enabled = openLink != null) { openLink?.invoke(sb.linux.client.common.network.Endpoints.abs("/gacha")) }) {
-        Row(Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+        Row(Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(title.name, color = fg, style = MaterialTheme.typography.labelSmall,
@@ -83,7 +81,7 @@ fun TitleBadgeView(title: TitleBadge, modifier: Modifier = Modifier, small: Bool
                 title.serial else title.rarity
             if (label.isNotBlank()) Surface(color = serialBg, shape = MaterialTheme.shapes.extraSmall) {
                 Text(label, color = Color.White, style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
-                    fontWeight = FontWeight.Bold, maxLines = 1,
+                    fontWeight = FontWeight.Medium, maxLines = 1,
                     modifier = Modifier.padding(horizontal = 3.dp))
             }
         }
