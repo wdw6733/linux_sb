@@ -46,6 +46,18 @@ internal fun AppSettings.importBackupJson(
             if (o.has("proxy_type")) p.putInt("proxy_type", o.optInt("proxy_type", 0).coerceIn(0, 2)).putBoolean("proxy_auto_detected", false)
             if (o.has("proxy_host")) p.putString("proxy_host", o.getString("proxy_host").trim())
             if (o.has("proxy_port")) p.putInt("proxy_port", o.optInt("proxy_port", 7890).coerceIn(1, 65535))
+            if (o.has("proxy_profiles")) {
+                // 先验格式再写：必须是 JSONArray 字符串，坏数据不覆盖本地列表。
+                JSONArray(o.getString("proxy_profiles"))
+                p.putString("proxy_profiles", o.getString("proxy_profiles"))
+            }
+            if (o.has("proxy_mode")) {
+                val mode = o.getString("proxy_mode")
+                require(mode in setOf("AUTO", "MANUAL", "OFF"))
+                p.putString("proxy_mode", mode)
+            }
+            if (o.has("proxy_active_profile_id")) p.putString("proxy_active_profile_id", o.getString("proxy_active_profile_id"))
+            if (o.has("proxy_failover_direct")) p.putBoolean("proxy_failover_direct", o.getBoolean("proxy_failover_direct"))
             if (o.has("doh_enabled")) p.putBoolean("doh_enabled", o.getBoolean("doh_enabled"))
             if (o.has("doh_url")) p.putString("doh_url", o.getString("doh_url"))
             if (o.has("doh_disable_on_vpn")) p.putBoolean("doh_disable_on_vpn", o.getBoolean("doh_disable_on_vpn"))
