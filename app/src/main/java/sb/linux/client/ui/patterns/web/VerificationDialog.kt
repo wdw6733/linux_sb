@@ -2,6 +2,7 @@ package sb.linux.client.ui.patterns.web
 
 import android.net.Uri
 import android.webkit.CookieManager
+import android.webkit.HttpAuthHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -53,6 +54,9 @@ fun VerificationDialog(
     var released by remember(url) { mutableStateOf(false) }
     var pageLoading by remember(url) { mutableStateOf(true) }
     var error by remember(url) { mutableStateOf<String?>(null) }
+    // 只记录，不再当作失败：Cloudflare 挑战页本身就是 403/503，置 failed 会让
+    // onPageFinished 跳过 poll，卡死到 Session 超时。
+    var httpStatus by remember(url) { mutableStateOf<Int?>(null) }
     var browser by remember(url) { mutableStateOf<WebView?>(null) }
     var pendingLoad by remember(url) { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     val succeeded by rememberUpdatedState(onSucceeded)
@@ -103,18 +107,34 @@ fun VerificationDialog(
                                 poll = Runnable {
                                     if (finished || released || failed) return@Runnable
                                     val uri = Uri.parse(this.url.orEmpty())
-                                    if (uri.scheme != "https" || !Endpoints.isForumHost(uri.host)) {
+                                    if (uri.scheme != "https") {
                                         error = "验证页面未能打开，请重试。"
+                                        return@Runnable
+                                    }
+                                    if (!Endpoints.isForumHost(uri.host)) {
+                                        // 挑战页可能先跳到 Cloudflare 域名：不等它，
+                                        // 继续轮询，等跳回论坛 host 再判定；一次越界就停 poll 会卡死。
+                                        postDelayed(poll, 1000)
                                         return@Runnable
                                     }
                                     val currentNavigation = navigation
                                     evaluateJavascript(AccessVerificationPage.STATE_SCRIPT) { state ->
                                         if (finished || released || failed || currentNavigation != navigation) return@evaluateJavascript
-                                        if (state == "\"ready\"") {
-                                            finished = true
-                                            succeeded()
-                                        } else {
-                                            postDelayed(poll, 1000)
+                                        when {
+                                            state == "\"ready\"" -> {
+                                                finished = true
+                                                succeeded()
+                                            }
+                                            state == "\"challenge\"" -> {
+                                                // 还在挑战中：清掉之前记的 HTTP 错误，继续等。
+                                                error = null
+                                                postDelayed(poll, 1000)
+                                            }
+                                            httpStatus != null && httpStatus!! >= 400 -> {
+                                                error = "验证页面返回 HTTP ${httpStatus}，请检查网络后重新加载。"
+                                                postDelayed(poll, 1000)
+                                            }
+                                            else -> postDelayed(poll, 1000)
                                         }
                                     }
                                 }
@@ -123,6 +143,7 @@ fun VerificationDialog(
                                         navigation++
                                         view.removeCallbacks(poll)
                                         failed = false
+                                        httpStatus = null
                                         pageLoading = true
                                         error = null
                                     }
@@ -137,8 +158,23 @@ fun VerificationDialog(
                                     }
 
                                     override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
-                                        // Cloudflare 的 403/503 挑战仍需完整显示，但不能被当作通过。
-                                        if (request.isForMainFrame) failed = response.statusCode >= 400
+                                        // Cloudflare 的 403/503 挑战仍需完整显示，但不能被当作通过；
+                                        // 也不能置 failed=true，否则 onPageFinished 不启动 poll，
+                                        // 挑战页会卡死到 Session 超时。只记状态，由 poll 判定。
+                                        if (request.isForMainFrame) httpStatus = response.statusCode
+                                    }
+
+                                    override fun onReceivedHttpAuthRequest(
+                                        view: WebView,
+                                        handler: HttpAuthHandler,
+                                        host: String?,
+                                        realm: String?,
+                                    ) {
+                                        // 带认证的代理 407：用生效 profile 的账号密码通过；
+                                        // 不是代理时走默认行为。
+                                        if (!sb.linux.client.platform.webview.ProxyAuthHandler.handle(handler, host)) {
+                                            super.onReceivedHttpAuthRequest(view, handler, host, realm)
+                                        }
                                     }
 
                                     override fun onPageFinished(view: WebView, pageUrl: String) {
