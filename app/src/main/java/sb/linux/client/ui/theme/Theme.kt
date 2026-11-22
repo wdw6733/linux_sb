@@ -75,8 +75,22 @@ fun hsvColor(h: Float, s: Float, v: Float): Color {
     return Color(argb.toLong() and 0xFFFFFFFFL)
 }
 
-/** 支持的所有调色风格（对应 material-color-utilities 的变体） */
-val PaletteStyles: List<PaletteStyle> = PaletteStyle.entries
+/** 降低饱和度（源站色保留在内容区时用，默认保留 80% 饱和度，色相与明度不动）。 */
+fun desaturate(color: Color, factor: Float = 0.8f): Color {
+    val hsv = colorToHsv(color)
+    return hsvColor(hsv[0], hsv[1] * factor, hsv[2])
+}
+
+/**
+ * 对外只留四种调色风格（unslop：单 accent 体系，下架 Rainbow/FruitSalad/Vibrant/Expressive）。
+ * 顺序与旧枚举前四项一致，已存的 0..3 仍按原义映射；4 及以上旧值由调用方回退到 TonalSpot。
+ */
+val PaletteStyles: List<PaletteStyle> = listOf(
+    PaletteStyle.TonalSpot,
+    PaletteStyle.Neutral,
+    PaletteStyle.Monochrome,
+    PaletteStyle.Content,
+)
 
 /** 调色风格的中文展示名 */
 fun paletteStyleLabel(style: PaletteStyle): String = when (style) {
