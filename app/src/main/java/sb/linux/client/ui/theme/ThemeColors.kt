@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
  * 默认静态色板（DESIGN_SYSTEM D02）。
  *
  * 品牌种子为 [BrandSeed]，本表是 SchemeTonalSpot / contrastLevel=0 的冻结输出：
+ * tertiary 不再用紫粉，改为种子蓝的低饱和变体（unslop 单 accent）。
  * 种子不等于最终 primary，页面不得把种子或本表的参考值当组件色直接使用。
  * 用户自定义种子仍走 MaterialKolor 生成；本表只服务「默认」配色且未被角色覆盖时。
  *
@@ -30,10 +31,10 @@ internal val DefaultLightColorScheme: ColorScheme = lightColorScheme(
     onSecondary = Color(0xFFFFFFFF),
     secondaryContainer = Color(0xFFDCE2F9),
     onSecondaryContainer = Color(0xFF404659),
-    tertiary = Color(0xFF735572),
+    tertiary = Color(0xFF5B6B8C),
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFFED7FA),
-    onTertiaryContainer = Color(0xFF593D59),
+    tertiaryContainer = Color(0xFFDCE4F2),
+    onTertiaryContainer = Color(0xFF3A4358),
     error = Color(0xFFBA1A1A),
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFFFDAD6),
@@ -69,10 +70,10 @@ internal val DefaultDarkColorScheme: ColorScheme = darkColorScheme(
     onSecondary = Color(0xFF2A3042),
     secondaryContainer = Color(0xFF404659),
     onSecondaryContainer = Color(0xFFDCE2F9),
-    tertiary = Color(0xFFE0BBDD),
-    onTertiary = Color(0xFF412742),
-    tertiaryContainer = Color(0xFF593D59),
-    onTertiaryContainer = Color(0xFFFED7FA),
+    tertiary = Color(0xFFA9B8D4),
+    onTertiary = Color(0xFF2E3648),
+    tertiaryContainer = Color(0xFF3A4358),
+    onTertiaryContainer = Color(0xFFDCE4F2),
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
