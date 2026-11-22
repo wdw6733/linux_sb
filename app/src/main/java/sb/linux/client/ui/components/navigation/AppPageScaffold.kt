@@ -1,5 +1,6 @@
 package sb.linux.client.ui.components.navigation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -10,12 +11,18 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import sb.linux.client.ui.theme.GlassScroll
+import sb.linux.client.ui.theme.GlassSignalLine
+import sb.linux.client.ui.theme.LocalGlassBackdrop
+import sb.linux.client.ui.theme.glassBar
 import sb.linux.client.ui.theme.LocalAppSizes
 
 /**
@@ -82,25 +89,44 @@ fun AppTopBar(
     actions: @Composable RowScope.() -> Unit = {},
     windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
     primaryPage: Boolean = false,
+    /** 首页 overlay 自带玻璃时传 false，本栏只留透明容器，不再叠加模糊与信号线。 */
+    glass: Boolean = true,
+    /** 滚动驱动的玻璃进度（0→1）；不传时读全局 [GlassScroll]（二级页默认 0）。 */
+    glassProgress: Float? = null,
 ) {
-    TopAppBar(
-        modifier = modifier.heightIn(min = LocalAppSizes.current.topBarHeight),
-        windowInsets = windowInsets,
-        title = {
-            if (titleContent != null) {
-                titleContent()
-            } else if (primaryPage) {
-                AppPageTitle(title)
-            } else {
-                Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        },
-        navigationIcon = {
-            when {
-                navigationIcon != null -> navigationIcon()
-                onBack != null -> AppBackButton(onBack)
-            }
-        },
-        actions = actions,
-    )
+    val scheme = MaterialTheme.colorScheme
+    val progress = (glassProgress ?: GlassScroll.progress).coerceIn(0f, 1f)
+    Column(modifier) {
+        TopAppBar(
+            modifier = Modifier.heightIn(min = LocalAppSizes.current.topBarHeight)
+                .then(if (glass) Modifier.glassBar(
+                    backdrop = LocalGlassBackdrop.current,
+                    alpha = progress * 0.82f,
+                    surface = scheme.surfaceContainer,
+                ) else Modifier),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
+            ),
+            windowInsets = windowInsets,
+            title = {
+                if (titleContent != null) {
+                    titleContent()
+                } else if (primaryPage) {
+                    AppPageTitle(title)
+                } else {
+                    Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            },
+            navigationIcon = {
+                when {
+                    navigationIcon != null -> navigationIcon()
+                    onBack != null -> AppBackButton(onBack)
+                }
+            },
+            actions = actions,
+        )
+        // 信号细线：随滚动进度生长，2dp accent；无滚动时不画。
+        if (glass) GlassSignalLine(progress)
+    }
 }
