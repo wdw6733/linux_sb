@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.background
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -26,7 +25,13 @@ import kotlinx.coroutines.CoroutineScope
 import sb.linux.client.domain.community.HomeSidebar
 import sb.linux.client.domain.community.FollowingView
 import sb.linux.client.ui.session.HomeTabState
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import sb.linux.client.ui.session.Session
+import sb.linux.client.ui.theme.GlassScroll
+import sb.linux.client.ui.theme.GlassSignalLine
+import sb.linux.client.ui.theme.glassBar
+import sb.linux.client.ui.theme.glassProgress
 import sb.linux.client.domain.topic.TopicCard
 
 @Composable
@@ -118,10 +123,15 @@ internal fun HomeNavigationLayout(
     ) {
         // Keep the first topic below the header without resizing the viewport on scroll.
         var topBarHeightPx by remember { mutableIntStateOf(0) }
+        // 顶栏玻璃背板：捕获列表层，栏是 overlay 兄弟，直接画模糊背板。
+        val homeBackdropBg = MaterialTheme.colorScheme.background
+        val homeBackdrop = rememberLayerBackdrop { drawRect(homeBackdropBg); drawContent() }
+        val glassProgress by listState.glassProgress()
+        LaunchedEffect(glassProgress) { GlassScroll.progress = glassProgress }
         val topInset = with(LocalDensity.current) { topBarHeightPx.toDp() }
         val following = session.homeBrowse.homeCombo == 0 && session.homeBrowse.homeTabIndex == 4
         Box(Modifier.fillMaxSize().statusBarsPadding().clipToBounds()) {
-            Column(Modifier.fillMaxSize().then(if (following) Modifier.padding(top = topInset) else Modifier)) {
+            Column(Modifier.fillMaxSize().then(if (following) Modifier.padding(top = topInset) else Modifier).layerBackdrop(homeBackdrop)) {
                 if (following) HomeFollowingFilters(session.homeBrowse.followingView) {
                     session.homeBrowse.followingView = it
                 }
@@ -167,7 +177,12 @@ internal fun HomeNavigationLayout(
                 exit = fadeOut() + slideOutVertically { -it },
             ) {
                 Column(
-                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
+                    Modifier.fillMaxWidth()
+                        .glassBar(
+                            backdrop = homeBackdrop,
+                            alpha = glassProgress * 0.82f,
+                            surface = MaterialTheme.colorScheme.surfaceContainer,
+                        )
                         .onSizeChanged { if (topBarVisible) topBarHeightPx = it.height }
                 ) {
                     HomeTopBar(
@@ -195,6 +210,8 @@ internal fun HomeNavigationLayout(
                         onSubmitSearch = { onSubmitSearch() },
                         onSelectCombo = { target, direction -> onSelectCombo(target, direction) },
                     )
+                    // 信号细线：随滚动进度生长。
+                    GlassSignalLine(glassProgress)
                 }
             }
 
