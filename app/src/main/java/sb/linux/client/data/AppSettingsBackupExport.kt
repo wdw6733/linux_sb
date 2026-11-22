@@ -39,6 +39,11 @@ internal fun AppSettings.exportBackupJson(
         o.put("proxy_type", proxyType)
         o.put("proxy_host", proxyHost)
         o.put("proxy_port", proxyPort)
+        // 多代理新键：列表/模式/手动锁定/直连回退（旧三键仍是镜像，继续导出）。
+        prefs.getString("proxy_profiles", null)?.let { o.put("proxy_profiles", it) }
+        prefs.getString("proxy_mode", null)?.let { o.put("proxy_mode", it) }
+        prefs.getString("proxy_active_profile_id", null)?.let { o.put("proxy_active_profile_id", it) }
+        o.put("proxy_failover_direct", prefs.getBoolean("proxy_failover_direct", false))
         o.put("doh_enabled", dohEnabled)
         o.put("doh_url", dohUrl)
         o.put("doh_disable_on_vpn", dohDisableOnVpn)
