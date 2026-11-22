@@ -199,7 +199,7 @@ internal class SessionThemePreferenceController(
             .remove("surface_opacity")
             .apply()
         session.themeMode = ThemeModePref.SYSTEM
-        session.dynamicColor = true
+        session.dynamicColor = false
         session.themeColorKey = "default"
         session.oledDark = false
         session.themeStyle = 0
