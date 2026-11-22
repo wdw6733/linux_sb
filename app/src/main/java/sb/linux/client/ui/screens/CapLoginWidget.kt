@@ -66,6 +66,9 @@ internal fun CapVerificationWidget(
     onToken: (String) -> Unit,
     onStatus: (String) -> Unit,
     onError: (String) -> Unit,
+    // 默认 82dp 内嵌盒子；回复场景走全屏 Dialog 时传入更大的尺寸，
+    // 验证码组件（Turnstile/挑战页）才有地方完整渲染，不再被小盒子裁掉。
+    boxModifier: Modifier = Modifier.fillMaxWidth().height(82.dp),
 ) {
     val latestToken by rememberUpdatedState(onToken)
     val latestStatus by rememberUpdatedState(onStatus)
@@ -88,7 +91,7 @@ internal fun CapVerificationWidget(
     }
     val ready = prepared
     if (ready == null) {
-        Box(Modifier.fillMaxWidth().height(82.dp), contentAlignment = Alignment.Center) {
+        Box(boxModifier, contentAlignment = Alignment.Center) {
             if (preparing) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AppInlineLoading(size = 18.dp)
@@ -127,7 +130,7 @@ internal fun CapVerificationWidget(
                 webView = null
             }
         }
-        Box(Modifier.fillMaxWidth().height(82.dp), contentAlignment = Alignment.Center) {
+        Box(boxModifier, contentAlignment = Alignment.Center) {
             AndroidView(
                 factory = { context ->
                     WebView(context).apply {
@@ -142,7 +145,19 @@ internal fun CapVerificationWidget(
                         CookieManager.getInstance().setAcceptCookie(true)
                         CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                         gateway.exportCookies()
-                        networkBridge = gateway.createBridge(ready) { script ->
+                        networkBridge = gateway.createBridge(
+                            ready,
+                            onError = { message ->
+                                // 桥接在 OkHttp 回调线程上拒绝/失败，必须 post 回主线程
+                                // 才写 Compose 状态，否则验证区只会一直转圈。
+                                runCatching {
+                                    post {
+                                        loading = false
+                                        latestError(message.ifBlank { "人机验证加载失败，请重试" })
+                                    }
+                                }
+                            },
+                        ) { script ->
                             post { runCatching { evaluateJavascript(script, null) } }
                         }
                         addJavascriptInterface(networkBridge!!, CapNetworkBridge.NAME)
@@ -184,8 +199,24 @@ internal fun CapVerificationWidget(
                                     latestError("验证码页面加载失败，请重试")
                                 }
                             }
+
+                            override fun onReceivedHttpAuthRequest(
+                                view: WebView,
+                                handler: android.webkit.HttpAuthHandler,
+                                host: String?,
+                                realm: String?,
+                            ) {
+                                if (!sb.linux.client.platform.webview.ProxyAuthHandler.handle(handler, host)) {
+                                    super.onReceivedHttpAuthRequest(view, handler, host, realm)
+                                }
+                            }
                         }
-                        WebViewDoh.loadHtml(this, ready.pageUrl, ready.widgetHtml())
+                        // DoH/代理准备失败时立即回调报错，不要等 12s 超时才提示。
+                        WebViewDoh.loadHtml(this, ready.pageUrl, ready.widgetHtml(),
+                            onFailure = {
+                                loading = false
+                                latestError("人机验证加载失败，请重试")
+                            })
                     }
                 },
                 modifier = Modifier.fillMaxSize(),
