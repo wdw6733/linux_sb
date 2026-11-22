@@ -47,6 +47,8 @@ fun ReplyDialog(
     previewUrl: String = "", previewCsrf: String = "", previewTopicId: Long = 0,
     editorMedia: sb.linux.client.domain.topic.SourceEditorMedia = sb.linux.client.domain.topic.SourceEditorMedia(),
     maxBodyLength: Int = Int.MAX_VALUE,
+    // 验证码缺失时的兜底：进全屏源站编辑器回复（带当前正文作引用）。
+    onOpenSourceEditor: ((String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val draftStore = remember(context) { sb.linux.client.data.SourceReplyDraftStore(context) }
@@ -62,6 +64,23 @@ fun ReplyDialog(
     var answer by remember { mutableStateOf("") }
     var captchaRevision by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
+    // 打开时 captcha==null：先自动刷新一次；3s 后仍为 null 即判定验证组件
+    // 未加载出来，显示缺失提示并拦截提交，不再静默发一条注定 form_error 的回复。
+    var captchaMissing by remember { mutableStateOf(false) }
+    var captchaAutoRefreshDone by remember { mutableStateOf(false) }
+    val latestCaptcha by rememberUpdatedState(captcha)
+    val latestRefreshCaptcha by rememberUpdatedState(onRefreshCaptcha)
+    LaunchedEffect(Unit) {
+        if (captcha == null && onRefreshCaptcha != null && !captchaAutoRefreshDone) {
+            captchaAutoRefreshDone = true
+            latestRefreshCaptcha?.invoke()
+            delay(3000)
+            if (latestCaptcha == null) captchaMissing = true
+        }
+    }
+    LaunchedEffect(captcha) {
+        if (captcha != null) captchaMissing = false
+    }
     var published by remember(owner, previewTopicId) { mutableStateOf(false) }
     LaunchedEffect(body.text, busy, owner) {
         if (previewTopicId <= 0 || busy || published) return@LaunchedEffect
@@ -107,7 +126,10 @@ fun ReplyDialog(
             body = TextFieldValue(changed, TextRange(body.selection.end.coerceAtMost(changed.length)))
         })
     val imageUploadBusy = imageUpload.uploading || media.busy
-    val canSubmit = body.text.isNotBlank() && body.text.length <= maxBodyLength && !busy && !imageUploadBusy && (captcha == null || answer.isNotBlank())
+    val canSubmit = body.text.isNotBlank() && body.text.length <= maxBodyLength && !busy && !imageUploadBusy &&
+        // captcha==null（未加载到验证）时不放行：没有验证令牌的提交只会 form_error。
+        // 源站本就不要求验证的帖子请走“全屏源站编辑器”兜底入口。
+        captcha != null && answer.isNotBlank() && !captchaMissing
     LaunchedEffect(captcha) {
         if (answer.isNotBlank()) answer = ""
         captchaRevision++
@@ -124,6 +146,11 @@ fun ReplyDialog(
             if (!succeeded && captcha is sb.linux.client.domain.account.LoginVerification.Cap) {
                 answer = ""
                 captchaRevision++
+            }
+            if (!succeeded && captcha == null) {
+                // 服务端已在失败时刷新过一次（见 TopicReplyService），仍无验证码
+                // 即标记缺失，让用户重新加载或走源站编辑器。
+                captchaMissing = true
             }
         }
     }
@@ -204,6 +231,8 @@ fun ReplyDialog(
                         topPadding = 10.dp,
                         revision = captchaRevision,
                         onReloadCap = { answer = ""; captchaRevision++ },
+                        captchaMissing = captchaMissing,
+                        onOpenSourceEditor = onOpenSourceEditor?.let { open -> { open(body.text) } },
                     )
                     Spacer(Modifier.height(12.dp))
                     ReplySubmissionNotice(submissionNotice, submitLabel, busy, canSubmit, ::submit)
@@ -281,6 +310,8 @@ fun ReplyDialog(
                 topPadding = 10.dp,
                 revision = captchaRevision,
                 onReloadCap = { answer = ""; captchaRevision++ },
+                captchaMissing = captchaMissing,
+                onOpenSourceEditor = onOpenSourceEditor?.let { open -> { open(body.text) } },
             )
             Spacer(Modifier.height(24.dp))
             ReplySubmissionNotice(submissionNotice, submitLabel, busy, canSubmit, ::submit)
