@@ -147,6 +147,9 @@ internal fun CapVerificationWidget(
                         gateway.exportCookies()
                         networkBridge = gateway.createBridge(
                             ready,
+                            evaluateJavascript = { script ->
+                                post { runCatching { evaluateJavascript(script, null) } }
+                            },
                             onError = { message ->
                                 // 桥接在 OkHttp 回调线程上拒绝/失败，必须 post 回主线程
                                 // 才写 Compose 状态，否则验证区只会一直转圈。
@@ -157,9 +160,7 @@ internal fun CapVerificationWidget(
                                     }
                                 }
                             },
-                        ) { script ->
-                            post { runCatching { evaluateJavascript(script, null) } }
-                        }
+                        )
                         addJavascriptInterface(networkBridge!!, CapNetworkBridge.NAME)
                         addJavascriptInterface(
                             CapStatusBridge(
