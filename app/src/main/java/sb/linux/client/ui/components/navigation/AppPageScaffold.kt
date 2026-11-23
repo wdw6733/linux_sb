@@ -101,7 +101,7 @@ fun AppTopBar(
             modifier = Modifier.heightIn(min = LocalAppSizes.current.topBarHeight)
                 .then(if (glass) Modifier.glassBar(
                     backdrop = LocalGlassBackdrop.current,
-                    alpha = progress * 0.82f,
+                    alpha = 0.45f + progress * 0.25f,
                     surface = scheme.surfaceContainer,
                 ) else Modifier),
             colors = TopAppBarDefaults.topAppBarColors(
