@@ -86,6 +86,12 @@ object WebViewDoh {
         val policy = repository.currentPolicy()
         val proxyUrl = policy.proxyUrl
         val active = policy.dohActive
+        // ProxyConfig 只认 http/https/socks 三种 scheme；非法规则必须直接失败，
+        // 绝不能静默直连（之前 socks5:// 就是这么漏过去的）。
+        if (proxyUrl != null) {
+            val scheme = proxyUrl.substringBefore("://", "")
+            if (scheme !in setOf("http", "https", "socks")) return false
+        }
         val key = when {
             proxyUrl != null -> "proxy:$proxyUrl"
             active -> "doh:${policy.dohUrl}:websites:${policy.forWebsites}:v5"
