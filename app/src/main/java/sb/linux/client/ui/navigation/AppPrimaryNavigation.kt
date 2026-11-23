@@ -55,7 +55,7 @@ internal fun AppBottomNavigation(
         NavigationBar(
             modifier = Modifier.glassBar(
                 backdrop = LocalGlassBackdrop.current,
-                alpha = 0.82f,
+                alpha = 0.55f,
                 surface = scheme.surfaceContainer,
             ),
             containerColor = Color.Transparent,
@@ -104,7 +104,7 @@ internal fun AppNavigationRail(
         modifier = Modifier.fillMaxHeight().width(sizes.railWidth)
             .glassBar(
                 backdrop = LocalGlassBackdrop.current,
-                alpha = 0.82f,
+                alpha = 0.55f,
                 surface = scheme.surfaceContainer,
             ),
         header = header,
