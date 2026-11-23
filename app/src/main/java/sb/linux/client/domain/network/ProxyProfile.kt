@@ -35,7 +35,7 @@ data class ProxyProfile(
 
     val proxyUrl: String get() {
         val scheme = when (type) {
-            ProxyType.SOCKS5 -> "socks5"
+            ProxyType.SOCKS5 -> "socks"
             ProxyType.HTTPS -> "https"
             ProxyType.HTTP -> "http"
         }
