@@ -160,7 +160,6 @@ internal fun PowVerificationWidget(
                                         super.onReceivedHttpAuthRequest(view, handler, host, realm)
                                     }
                                 }
-                                }
                                 override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
                                     if (coreResource(request)) failed("验证资源返回 HTTP " + response.statusCode + "，请重新加载")
                                 }
