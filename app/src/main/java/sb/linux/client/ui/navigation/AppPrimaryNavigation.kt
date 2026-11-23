@@ -75,7 +75,7 @@ internal fun AppBottomNavigation(
                     // 标签就是无障碍名称，图标不重复朗读。
                     label = { Text(destination.label) },
                     // 选中态：MD3 pill 改为表面台阶。
-                    colors = NavigationBarItemDefaults.colors(selectedIndicatorColor = scheme.surfaceContainerHighest),
+                    colors = NavigationBarItemDefaults.colors(indicatorColor = scheme.surfaceContainerHighest),
                 )
             }
         }
