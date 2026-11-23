@@ -63,6 +63,11 @@ fun AppPageScaffold(
                 titleContent = titleContent,
                 actions = actions,
                 primaryPage = primaryPage,
+                // 1.2.3 热修复：二级页顶栏在 NavHost 内容层内部，drawBackdrop 会在
+                // 背板纹理正在录制时采样同一块纹理，Android 16 上直接闪退。
+                // 先关掉二级页的层内玻璃（回到 1.2.0 的半透明外观），首页 overlay
+                // 顶栏是背板兄弟，不受影响。
+                glass = false,
             )
         },
         bottomBar = bottomBar,
