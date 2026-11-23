@@ -16,7 +16,7 @@ import sb.linux.client.domain.network.ProxyType
  * 不再直接覆盖唯一配置——旧 proxy_type/host/port 三键不再由这里写。
  */
 internal object AppProxyDiscovery {
-    @Volatile private var pending: Deferred<Unit>? = null
+    @Volatile private var pending: Deferred<Unit?>? = null
 
     @Synchronized fun refresh(context: Context, scope: CoroutineScope) {
         if (pending?.isActive == true) return
