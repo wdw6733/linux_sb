@@ -3,6 +3,7 @@ package sb.linux.client.data
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Looper
 import java.net.Inet4Address
 import java.net.InetAddress
 import sb.linux.client.domain.network.ProxyEnvironment
@@ -37,7 +38,11 @@ internal object ProxyEnvironmentDetector {
         // 短路——能向内网代理握手成功本身就是内网可达的证明。
         val isLocalTransport = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true ||
             capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
-        val probeOk = lanProbeHost.isNotBlank() &&
+        // 主线程上不做实时探测：握手含 DNS 解析与建连，主线程会抛
+        // NetworkOnMainThreadException（1.2.5 拨代理开关闪退的根因）；只按传输类型
+        // 分类，后台刷新（ProxyRouter.refreshAsync）会再探测纠正。
+        val probeOk = if (Looper.myLooper() == Looper.getMainLooper()) false
+        else lanProbeHost.isNotBlank() &&
             lanProbePort in 1..65535 &&
             LocalProxyProbe.socks5(lanProbeHost, lanProbePort, timeoutMs = 800)
         return classify(isLocalTransport, probeOk)
