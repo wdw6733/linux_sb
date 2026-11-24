@@ -1,20 +1,30 @@
 package sb.linux.client.data
 
+import android.os.Looper
 import java.net.InetSocketAddress
 import java.net.Socket
 
 /** Probes the two local proxy protocols supported by automatic proxy discovery. */
 internal object LocalProxyProbe {
+    /**
+     * 主线程上绝不做任何网络操作（DNS 解析、建连都会抛 NetworkOnMainThreadException）：
+     * 探测只在后台线程有意义，主线程调用直接返回 false，调用方按“探测失败”分类，
+     * 后台刷新会再探测纠正。1.2.5 拨代理开关闪退就是主线程上走了这里的 DNS。
+     */
+    private fun onMainThread(): Boolean = Looper.myLooper() == Looper.getMainLooper()
+
     fun socks5(port: Int): Boolean = socks5("127.0.0.1", port)
 
     /**
      * 任意 host 的 SOCKS5 无认证握手探测（内网 192.168.124.250:57080 也走这里）。
      * 域名解析出多个地址时逐个试握手，任一成功即 true——只试第一个地址会被死的 v4 卡住。
-     * 解析失败时退回旧行为（按原始 host 直连一次）。
+     * 解析不到不做任何回退（1.2.5 的“按原始 host 直连一次”会在
+     * `InetSocketAddress(host, port)` 构造里做 DNS 查询，主线程上直接闪退，见 1.2.6）。
      */
     fun socks5(host: String, port: Int, timeoutMs: Int = 300): Boolean {
+        if (onMainThread()) return false
         val addresses = ProxyHostResolver.resolveAll(host)
-        if (addresses.isEmpty()) return socks5Handshake(InetSocketAddress(host, port), timeoutMs)
+        if (addresses.isEmpty()) return false
         return addresses.any { socks5Handshake(InetSocketAddress(it, port), timeoutMs) }
     }
 
@@ -30,10 +40,11 @@ internal object LocalProxyProbe {
 
     fun http(port: Int): Boolean = http("127.0.0.1", port)
 
-    /** 与 [socks5] 同理：多地址逐个试 CONNECT，任一成功即 true；解析失败退回旧行为。 */
+    /** 与 [socks5] 同理：多地址逐个试 CONNECT，任一成功即 true；解析不到直接返回 false。 */
     fun http(host: String, port: Int, timeoutMs: Int = 300): Boolean {
+        if (onMainThread()) return false
         val addresses = ProxyHostResolver.resolveAll(host)
-        if (addresses.isEmpty()) return httpProbe(InetSocketAddress(host, port), timeoutMs)
+        if (addresses.isEmpty()) return false
         return addresses.any { httpProbe(InetSocketAddress(it, port), timeoutMs) }
     }
 
