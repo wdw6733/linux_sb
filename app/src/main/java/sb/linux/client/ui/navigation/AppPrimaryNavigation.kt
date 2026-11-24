@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import sb.linux.client.ui.theme.LiquidGlassBarMargin
 import sb.linux.client.ui.theme.LocalGlassBackdrop
 import sb.linux.client.ui.theme.glassBar
 import sb.linux.client.ui.theme.LocalAppSizes
@@ -51,7 +52,13 @@ internal fun AppBottomNavigation(
     onSelect: (String) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Box {
+    // 浮动液态玻璃胶囊：边距加在根 Box（玻璃 NavigationBar 的父级）上，底边悬空 12dp；
+    // 选中项 accent 细线在 Box 内，与栏的项目对齐。
+    Box(Modifier.padding(
+        start = LiquidGlassBarMargin,
+        end = LiquidGlassBarMargin,
+        bottom = LiquidGlassBarMargin,
+    )) {
         NavigationBar(
             modifier = Modifier.glassBar(
                 backdrop = LocalGlassBackdrop.current,
@@ -100,17 +107,22 @@ internal fun AppNavigationRail(
 ) {
     val sizes = LocalAppSizes.current
     val scheme = MaterialTheme.colorScheme
-    NavigationRail(
-        containerColor = Color.Transparent,
-        modifier = Modifier.fillMaxHeight().width(sizes.railWidth)
-            .glassBar(
-                backdrop = LocalGlassBackdrop.current,
-                alpha = 0.62f,
-                surface = scheme.surfaceContainer,
-                blurRadius = 20.dp,
-            ),
-        header = header,
-    ) {
+    // 浮动液态玻璃胶囊 rail：四边各留 12dp 悬空；NavigationRail 仍是 NavHost 内容层的兄弟。
+    Box(Modifier.fillMaxHeight().padding(
+        vertical = LiquidGlassBarMargin,
+        horizontal = LiquidGlassBarMargin,
+    )) {
+        NavigationRail(
+            containerColor = Color.Transparent,
+            modifier = Modifier.fillMaxHeight().width(sizes.railWidth)
+                .glassBar(
+                    backdrop = LocalGlassBackdrop.current,
+                    alpha = 0.62f,
+                    surface = scheme.surfaceContainer,
+                    blurRadius = 20.dp,
+                ),
+            header = header,
+        ) {
         // 宽窗账号入口固定在侧栏底部，其余目的地保留用户顺序。
         (destinations.filterNot { it.id == AppDestinations.me.id } +
             destinations.filter { it.id == AppDestinations.me.id }).forEach { destination ->
@@ -136,6 +148,7 @@ internal fun AppNavigationRail(
                         .background(scheme.primary, RoundedCornerShape(1.dp))
                 )
             }
+        }
         }
     }
 }
