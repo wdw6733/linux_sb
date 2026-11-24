@@ -30,6 +30,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import sb.linux.client.ui.session.Session
 import sb.linux.client.ui.theme.GlassScroll
 import sb.linux.client.ui.theme.GlassSignalLine
+import sb.linux.client.ui.theme.LiquidGlassBarMargin
 import sb.linux.client.ui.theme.glassBar
 import sb.linux.client.ui.theme.glassProgress
 import sb.linux.client.domain.topic.TopicCard
@@ -172,7 +173,10 @@ internal fun HomeNavigationLayout(
                 }
             }
             AnimatedVisibility(
-                visible = topBarVisible, modifier = Modifier.align(Alignment.TopCenter),
+                // 浮动液态玻璃胶囊：边距加在 AnimatedVisibility（玻璃 Column 的父级）上，
+                // 内层 Column 才画玻璃，玻璃按内层尺寸画。
+                visible = topBarVisible, modifier = Modifier.align(Alignment.TopCenter)
+                    .padding(horizontal = LiquidGlassBarMargin),
                 enter = fadeIn() + slideInVertically { -it },
                 exit = fadeOut() + slideOutVertically { -it },
             ) {
@@ -180,7 +184,7 @@ internal fun HomeNavigationLayout(
                     Modifier.fillMaxWidth()
                         .glassBar(
                             backdrop = homeBackdrop,
-                            alpha = 0.35f + glassProgress * 0.35f,
+                            alpha = 0.45f + glassProgress * 0.25f,
                             surface = MaterialTheme.colorScheme.surfaceContainer,
                         )
                         .onSizeChanged { if (topBarVisible) topBarHeightPx = it.height }
