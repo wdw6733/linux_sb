@@ -7,7 +7,7 @@ import java.net.Socket
 internal object LocalProxyProbe {
     fun socks5(port: Int): Boolean = socks5("127.0.0.1", port)
 
-    /** 任意 host 的 SOCKS5 无认证握手探测（内网 192.168.124.250:57081 也走这里）。 */
+    /** 任意 host 的 SOCKS5 无认证握手探测（内网 192.168.124.250:57080 也走这里）。 */
     fun socks5(host: String, port: Int, timeoutMs: Int = 300): Boolean = runCatching {
         Socket().use { socket ->
             socket.connect(InetSocketAddress(host, port), timeoutMs)
