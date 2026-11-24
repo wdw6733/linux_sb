@@ -186,7 +186,7 @@ object AppNetwork {
                     Proxy(
                         if (profile.type == sb.linux.client.domain.network.ProxyType.SOCKS5) Proxy.Type.SOCKS
                         else Proxy.Type.HTTP,
-                        InetSocketAddress.createUnresolved(profile.host, profile.port),
+                        ProxyHostResolver.resolveProxyAddress(profile.host, profile.port),
                     )
                 }
             }
@@ -198,7 +198,7 @@ object AppNetwork {
                     Proxy(
                         if (active.type == sb.linux.client.domain.network.ProxyType.SOCKS5) Proxy.Type.SOCKS
                         else Proxy.Type.HTTP,
-                        InetSocketAddress.createUnresolved(active.host, active.port),
+                        ProxyHostResolver.resolveProxyAddress(active.host, active.port),
                     ),
                 )
             }
@@ -207,13 +207,22 @@ object AppNetwork {
 
         override fun connectFailed(uri: URI?, sa: SocketAddress?, ioe: java.io.IOException?) {
             // 按 host:port 找到失败的 profile 记一次；同环境按 priority 试下一个候选。
+            // 1.2.5 起 select() 给的是已解析地址：hostString 仍是域名时直接比对；
+            // 若 hostString 已是解析出的 IP 字面量，则按解析地址再比对一次，否则失败记不到账。
             val address = sa as? InetSocketAddress ?: return
             val candidates = proxyCandidates()
-            candidates.firstOrNull { it.host == address.hostString && it.port == address.port }
-                ?.let { ProxyRouter.recordFailure(it.id) }
+            val failed = candidates.firstOrNull { it.host == address.hostString && it.port == address.port }
+                ?: candidates.firstOrNull { candidate ->
+                    candidate.port == address.port && address.address != null &&
+                        ProxyHostResolver.resolveAll(candidate.host).contains(address.address)
+                }
                 ?: activeProxyProfile()
                     ?.takeIf { it.host == address.hostString && it.port == address.port }
-                    ?.let { ProxyRouter.recordFailure(it.id) }
+            failed?.let {
+                ProxyRouter.recordFailure(it.id)
+                // 该 host:port 的解析缓存失效，下次 select() 重新解析探测（死的地址不再被缓存住）。
+                ProxyHostResolver.invalidate(it.host, it.port)
+            }
         }
     }
 
