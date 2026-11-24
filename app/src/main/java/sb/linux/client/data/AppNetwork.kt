@@ -166,7 +166,7 @@ object AppNetwork {
     /** 扫描常见本地端口并做协议握手，不依赖代理软件包名或系统 VPN 状态。 */
     suspend fun detectLocalProxy(preferredPort: Int? = null): AppProxyConfig? = coroutineScope {
         val ports = listOfNotNull(preferredPort?.takeIf { it in 1..65535 }) +
-            listOf(7890, 7891, 1080, 10808, 10809, 57081, 20170, 2080, 8080, 8888, 9090)
+            listOf(7890, 7891, 1080, 10808, 10809, 57080, 20170, 2080, 8080, 8888, 9090)
         ports.distinct().map { port ->
             async(Dispatchers.IO) {
                 when {
