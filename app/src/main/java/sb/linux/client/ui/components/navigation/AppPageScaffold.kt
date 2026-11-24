@@ -6,10 +6,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -75,6 +73,7 @@ fun AppPageScaffold(
 ) {
     ApplyDialogStatusBarPreference()
     val scheme = MaterialTheme.colorScheme
+    val appSizes = LocalAppSizes.current
     val density = LocalDensity.current
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     // 每页自建局部背板（与首页/帖子页同一接法）：只录内层 Scaffold，顶栏是外层 Box 里的
@@ -83,7 +82,7 @@ fun AppPageScaffold(
     val pageBackdrop = rememberLayerBackdrop { drawRect(pageBackdropBg); drawContent() }
     // 顶栏高：初值 64dp（LocalAppSizes.topBarHeight），实测到更大值时跟进
     // （超大字体下标题可能撑高顶栏；旧 Scaffold 是实测高度，新结构必须同样实测）。
-    var topBarHeight by remember { mutableStateOf(LocalAppSizes.current.topBarHeight) }
+    var topBarHeight by remember { mutableStateOf(appSizes.topBarHeight) }
     val progress = GlassScroll.progress.coerceIn(0f, 1f)
     Box(Modifier.fillMaxSize().clipToBounds()) {
         // 注意：bottomBar 也在被录层内——它现在不用玻璃所以安全；以后若给底栏加 glassBar，
@@ -114,7 +113,7 @@ fun AppPageScaffold(
                 )
                 .onSizeChanged { size ->
                     val measured = with(density) { size.height.toDp() } - statusBarTop - 2.dp
-                    val grown = measured.coerceAtLeast(LocalAppSizes.current.topBarHeight)
+                    val grown = measured.coerceAtLeast(appSizes.topBarHeight)
                     if (grown != topBarHeight) topBarHeight = grown
                 },
         ) {
