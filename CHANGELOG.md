@@ -1,5 +1,17 @@
 # 更新日志
 
+## [1.2.6] - 2026-11-24
+
+### Bug 修复
+
+- 修复点代理 profile“启用”开关立即闪退（`NetworkOnMainThreadException`，真机崩溃堆栈确诊）：`LocalProxyProbe` 删掉解析不到时按原始域名直连的回退（`InetSocketAddress(域名, 端口)` 构造里做 DNS 查询，主线程上直接闪退），解析不到直接返回 false；探测与环境判定加主线程守卫，主线程上不做任何网络操作；`AppNetwork.invalidate()` 与网络回调里的 `cancelTestsOnVpn()` 挪到维护线程（之前只挪了 evictAll/close，漏了这一处）。
+
+### 液态玻璃重做
+
+- 顶栏、底栏、侧栏改成浮动胶囊：24dp 圆角 + 各边 12dp 悬空边距（底栏底边也悬空），iOS 26 悬浮形态；边距在父级容器上，玻璃按内层尺寸画。
+- 启用真折射：`lens`（折射高 16dp、折射量 32dp，官方 Bottom Bar 教程配方）+ `depthEffect` + `chromaticAberration` 全开，保留 blur + vibrancy；highlight 由默认 0.5dp 发丝线加宽到 1dp rim。之前栏是矩形、无圆角可用，lens 只能关闭，所以看起来只是毛玻璃。
+- 顶栏静止不透明度 0.35 → 0.45（滚动到 0.70），不滚动也肉眼可见；层级关系不变（栏仍是被录层的兄弟），Android 16 闪退铁律不受影响。
+
 ## [1.2.5] - 2026-11-24
 
 ### 代理修复
