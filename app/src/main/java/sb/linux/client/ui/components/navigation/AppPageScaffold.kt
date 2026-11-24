@@ -1,10 +1,19 @@
 package sb.linux.client.ui.components.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateTopPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,9 +25,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import sb.linux.client.ui.theme.GlassScroll
 import sb.linux.client.ui.theme.GlassSignalLine
 import sb.linux.client.ui.theme.LocalGlassBackdrop
@@ -53,9 +74,53 @@ fun AppPageScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     ApplyDialogStatusBarPreference()
-    Scaffold(
-        modifier = modifier,
-        topBar = {
+    val scheme = MaterialTheme.colorScheme
+    val density = LocalDensity.current
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    // 每页自建局部背板（与首页/帖子页同一接法）：只录内层 Scaffold，顶栏是外层 Box 里的
+    // overlay 兄弟。绝不能再用外壳背板——顶栏在 NavHost 层内，1.2.1 就是这么闪退的。
+    val pageBackdropBg = scheme.background
+    val pageBackdrop = rememberLayerBackdrop { drawRect(pageBackdropBg); drawContent() }
+    // 顶栏高：初值 64dp（LocalAppSizes.topBarHeight），实测到更大值时跟进
+    // （超大字体下标题可能撑高顶栏；旧 Scaffold 是实测高度，新结构必须同样实测）。
+    var topBarHeight by remember { mutableStateOf(LocalAppSizes.current.topBarHeight) }
+    val progress = GlassScroll.progress.coerceIn(0f, 1f)
+    Box(Modifier.fillMaxSize().clipToBounds()) {
+        // 注意：bottomBar 也在被录层内——它现在不用玻璃所以安全；以后若给底栏加 glassBar，
+        // 必须用外壳背板（LocalGlassBackdrop）且保证底栏是 NavHost 层的兄弟，绝不能用 pageBackdrop。
+        Scaffold(
+            modifier = modifier.fillMaxSize().layerBackdrop(pageBackdrop),
+            // 顶栏移到外层 overlay，内层不再占顶栏位；内容顶垫 = 状态栏 + 顶栏 + 2dp 信号线，
+            // 与旧 Scaffold（顶栏槽实测高）完全一致，各页首项不会被顶栏盖住。
+            topBar = {},
+            bottomBar = bottomBar,
+            content = { padding ->
+                val adjusted = PaddingValues(
+                    top = padding.calculateTopPadding() + topBarHeight + 2.dp,
+                    bottom = padding.calculateBottomPadding(),
+                    start = padding.calculateStartPadding(LocalLayoutDirection.current),
+                    end = padding.calculateEndPadding(LocalLayoutDirection.current),
+                )
+                content(adjusted)
+            },
+        )
+        Column(
+            Modifier.fillMaxWidth().align(Alignment.TopCenter)
+                .glassBar(
+                    backdrop = pageBackdrop,
+                    alpha = 0.35f + progress * 0.35f,
+                    surface = scheme.surfaceContainer,
+                    blurRadius = 24.dp,
+                )
+                .onSizeChanged { size ->
+                    val measured = with(density) { size.height.toDp() } - statusBarTop - 2.dp
+                    val grown = measured.coerceAtLeast(LocalAppSizes.current.topBarHeight)
+                    if (grown != topBarHeight) topBarHeight = grown
+                },
+        ) {
+            // 本栏只留透明容器，不叠加第二层玻璃；玻璃在外层 Column 上。
+            // windowInsets 保持默认（状态栏）：外层 Box 没有 statusBarsPadding，
+            // 状态栏高度由 TopAppBar 自身消化，与内容顶垫里的状态栏部分对齐。
             AppTopBar(
                 title = title,
                 onBack = onBack,
@@ -63,16 +128,11 @@ fun AppPageScaffold(
                 titleContent = titleContent,
                 actions = actions,
                 primaryPage = primaryPage,
-                // 1.2.3 热修复：二级页顶栏在 NavHost 内容层内部，drawBackdrop 会在
-                // 背板纹理正在录制时采样同一块纹理，Android 16 上直接闪退。
-                // 先关掉二级页的层内玻璃（回到 1.2.0 的半透明外观），首页 overlay
-                // 顶栏是背板兄弟，不受影响。
                 glass = false,
             )
-        },
-        bottomBar = bottomBar,
-        content = content,
-    )
+            GlassSignalLine(progress)
+        }
+    }
 }
 
 /**
@@ -106,7 +166,7 @@ fun AppTopBar(
             modifier = Modifier.heightIn(min = LocalAppSizes.current.topBarHeight)
                 .then(if (glass) Modifier.glassBar(
                     backdrop = LocalGlassBackdrop.current,
-                    alpha = 0.45f + progress * 0.25f,
+                    alpha = 0.35f + progress * 0.35f,
                     surface = scheme.surfaceContainer,
                 ) else Modifier),
             colors = TopAppBarDefaults.topAppBarColors(
