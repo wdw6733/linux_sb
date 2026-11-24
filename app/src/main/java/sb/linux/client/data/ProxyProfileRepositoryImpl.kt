@@ -22,7 +22,15 @@ internal class ProxyProfileRepositoryImpl(context: Context) : ProxyProfileReposi
 
     override fun profiles(): List<ProxyProfile> {
         ensureSeeded()
-        return readProfiles()
+        val loaded = readProfiles()
+        // 1.2.4 迁移：实测 57081 只握手不通流量、57080 才通；已保存的配置里只有
+        // host/port 与旧示例值完全相同的那条才改端口，用户自己改过的端口绝不动。
+        if (loaded.none { it.host == LAN_EXAMPLE_HOST && it.port == LAN_LEGACY_PORT }) return loaded
+        val migrated = loaded.map {
+            if (it.host == LAN_EXAMPLE_HOST && it.port == LAN_LEGACY_PORT) it.copy(port = LAN_EXAMPLE_PORT) else it
+        }
+        saveAll(migrated)
+        return migrated
     }
 
     override fun saveAll(profiles: List<ProxyProfile>) {
@@ -88,7 +96,7 @@ internal class ProxyProfileRepositoryImpl(context: Context) : ProxyProfileReposi
             return
         }
         // 全新：预置两条占位 profile。
-        // 内网那条给的是可改的示例值 192.168.124.250:57081，不是写死——
+        // 内网那条给的是可改的示例值 192.168.124.250:57080，不是写死——
         // 使用者在代理列表里随时能改 host/port；外网那条 host 留空，等使用者自己填域名。
         saveAll(
             listOf(
@@ -157,6 +165,8 @@ internal class ProxyProfileRepositoryImpl(context: Context) : ProxyProfileReposi
 
         /** 内网示例值（可改，不是写死）：家里 SOCKS5 默认地址。 */
         const val LAN_EXAMPLE_HOST = "192.168.124.250"
-        const val LAN_EXAMPLE_PORT = 57081
+        const val LAN_EXAMPLE_PORT = 57080
+        /** 1.2.4 之前种子用的旧端口：实测只握手不通流量，已废弃，仅供迁移判断。 */
+        const val LAN_LEGACY_PORT = 57081
     }
 }
