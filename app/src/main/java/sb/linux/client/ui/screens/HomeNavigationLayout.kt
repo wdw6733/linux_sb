@@ -180,7 +180,7 @@ internal fun HomeNavigationLayout(
                     Modifier.fillMaxWidth()
                         .glassBar(
                             backdrop = homeBackdrop,
-                            alpha = 0.45f + glassProgress * 0.25f,
+                            alpha = 0.35f + glassProgress * 0.35f,
                             surface = MaterialTheme.colorScheme.surfaceContainer,
                         )
                         .onSizeChanged { if (topBarVisible) topBarHeightPx = it.height }
