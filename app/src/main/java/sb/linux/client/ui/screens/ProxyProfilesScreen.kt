@@ -43,7 +43,7 @@ import sb.linux.client.ui.session.Session
 /**
  * 代理列表：增删改多条 HTTP/HTTPS/SOCKS5 代理、连通性测试、手动锁定。
  * 所有代理信息都留位置给使用者自己填，不编造：
- * 内网那条默认填了 192.168.124.250:57081 作可改的示例值（UI 上写明可改），
+ * 内网那条默认填了 192.168.124.250:57080 作可改的示例值（UI 上写明可改），
  * 外网那条默认 host 留空，等使用者填自己的域名代理。
  * 密码按项目现有惯例存 SharedPreferences 明文，界面上有提示。
  */
@@ -65,7 +65,7 @@ internal fun ProxyProfilesScreen(session: Session, nav: NavHostController) {
             Text("多条代理", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
             Text(
                 "每条代理都要填好主机和端口才能用；留空的就是占位，切换时会被跳过。" +
-                    "内网那条默认填了 192.168.124.250:57081 作示例，可以改成你自己的；" +
+                    "内网那条默认填了 192.168.124.250:57080 作示例，可以改成你自己的；" +
                     "外网那条默认是空的，填你自己的域名代理地址。用户名/密码只在需要认证的代理上填。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -221,7 +221,7 @@ private fun ProxyProfileEditDialog(
                     value = editing.port,
                     onValueChange = { onChange { copy(port = it.filter(Char::isDigit).take(5)) } },
                     label = { Text("端口") },
-                    placeholder = { Text("内网示例 57081") },
+                    placeholder = { Text("内网示例 57080") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
