@@ -6,9 +6,14 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import sb.linux.client.data.LocalProxyProbe
 import sb.linux.client.data.ProxyRouter
 import sb.linux.client.domain.network.ProxyMode
@@ -179,7 +184,10 @@ class ProxyProfilesViewModel(
         refresh()
     }
 
-    /** 连通性测试：按类型做握手探测，不经过 OkHttp、不改配置。 */
+    /**
+     * 连通性测试：先按类型做握手探测，再经该代理实际打开一次 linux.sb——
+     * 只握手不通流量（例如 57081）时握手也会“连通”，必须以真实请求为准；不改配置。
+     */
     fun test(id: String) {
         val profile = state.profiles.firstOrNull { it.id == id } ?: return
         if (!profile.isConfigured) {
@@ -188,20 +196,35 @@ class ProxyProfilesViewModel(
         }
         update { copy(testingId = id) }
         viewModelScope.launch(Dispatchers.IO) {
-            val ok = when (profile.type) {
+            val handshakeOk = when (profile.type) {
                 ProxyType.SOCKS5 -> LocalProxyProbe.socks5(profile.host, profile.port, timeoutMs = 1500)
                 else -> LocalProxyProbe.http(profile.host, profile.port, timeoutMs = 1500)
+            }
+            val result = when {
+                !handshakeOk -> "连不通，请检查地址、端口和网络"
+                realRequestOk(profile) -> "可用"
+                else -> "握手通，但打不开 linux.sb（出口不通）"
             }
             update {
                 copy(
                     testingId = null,
-                    testResults = testResults + (
-                        id to if (ok) "连通" else "连不通，请检查地址、端口和网络"
-                        ),
+                    testResults = testResults + (id to result),
                 )
             }
         }
     }
+
+    /** 经指定代理实际请求一次 https://linux.sb/，2xx/3xx 才算可用。 */
+    private fun realRequestOk(profile: ProxyProfile): Boolean = runCatching {
+        val proxyType = if (profile.type == ProxyType.SOCKS5) Proxy.Type.SOCKS else Proxy.Type.HTTP
+        val client = OkHttpClient.Builder()
+            .proxy(Proxy(proxyType, InetSocketAddress.createUnresolved(profile.host, profile.port)))
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .build()
+        val request = Request.Builder().url("https://linux.sb/").build()
+        client.newCall(request).execute().use { it.code in 200..399 }
+    }.getOrDefault(false)
 
     private fun update(change: ProxyProfilesUiState.() -> ProxyProfilesUiState) {
         state = state.change()
