@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -15,6 +14,7 @@ import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import sb.linux.client.data.LocalProxyProbe
+import sb.linux.client.data.ProxyHostResolver
 import sb.linux.client.data.ProxyRouter
 import sb.linux.client.domain.network.ProxyMode
 import sb.linux.client.domain.network.ProxyProfile
@@ -218,7 +218,7 @@ class ProxyProfilesViewModel(
     private fun realRequestOk(profile: ProxyProfile): Boolean = runCatching {
         val proxyType = if (profile.type == ProxyType.SOCKS5) Proxy.Type.SOCKS else Proxy.Type.HTTP
         val client = OkHttpClient.Builder()
-            .proxy(Proxy(proxyType, InetSocketAddress.createUnresolved(profile.host, profile.port)))
+            .proxy(Proxy(proxyType, ProxyHostResolver.resolveProxyAddress(profile.host, profile.port)))
             .connectTimeout(5, TimeUnit.SECONDS)
             .readTimeout(5, TimeUnit.SECONDS)
             .build()
