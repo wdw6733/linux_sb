@@ -137,11 +137,10 @@ class ProxyEnvironmentDetectorTest {
     }
 
     @Test
-    fun classifyRequiresAllThreeLanConditions() {
-        assertTrue(ProxyEnvironmentDetector.classify(true, true, true).isLan)
-        assertFalse(ProxyEnvironmentDetector.classify(false, true, true).isLan)
-        assertFalse(ProxyEnvironmentDetector.classify(true, false, true).isLan)
-        assertFalse(ProxyEnvironmentDetector.classify(true, true, false).isLan)
-        assertFalse(ProxyEnvironmentDetector.classify(false, false, false).isLan)
+    fun classifyRequiresLocalTransportAndLanProbe() {
+        assertTrue(ProxyEnvironmentDetector.classify(true, true).isLan)
+        assertFalse(ProxyEnvironmentDetector.classify(false, true).isLan)
+        assertFalse(ProxyEnvironmentDetector.classify(true, false).isLan)
+        assertFalse(ProxyEnvironmentDetector.classify(false, false).isLan)
     }
 }
