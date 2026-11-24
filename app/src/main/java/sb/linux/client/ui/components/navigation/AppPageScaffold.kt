@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,6 +41,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import sb.linux.client.ui.theme.GlassScroll
 import sb.linux.client.ui.theme.GlassSignalLine
+import sb.linux.client.ui.theme.LiquidGlassBarMargin
 import sb.linux.client.ui.theme.LocalGlassBackdrop
 import sb.linux.client.ui.theme.glassBar
 import sb.linux.client.ui.theme.LocalAppSizes
@@ -103,20 +105,26 @@ fun AppPageScaffold(
                 content(adjusted)
             },
         )
-        Column(
+        // 浮动液态玻璃胶囊：外层 Box 留水平边距，内层 Column 才画玻璃
+        // （边距在父级，玻璃按内层尺寸画；直接写在 glassBar 链上盖不住边距）。
+        Box(
             Modifier.fillMaxWidth().align(Alignment.TopCenter)
-                .glassBar(
-                    backdrop = pageBackdrop,
-                    alpha = 0.35f + progress * 0.35f,
-                    surface = scheme.surfaceContainer,
-                    blurRadius = 24.dp,
-                )
-                .onSizeChanged { size ->
-                    val measured = with(density) { size.height.toDp() } - statusBarTop - 2.dp
-                    val grown = measured.coerceAtLeast(appSizes.topBarHeight)
-                    if (grown != topBarHeight) topBarHeight = grown
-                },
+                .padding(horizontal = LiquidGlassBarMargin),
         ) {
+            Column(
+                Modifier.fillMaxWidth()
+                    .glassBar(
+                        backdrop = pageBackdrop,
+                        alpha = 0.45f + progress * 0.25f,
+                        surface = scheme.surfaceContainer,
+                        blurRadius = 24.dp,
+                    )
+                    .onSizeChanged { size ->
+                        val measured = with(density) { size.height.toDp() } - statusBarTop - 2.dp
+                        val grown = measured.coerceAtLeast(appSizes.topBarHeight)
+                        if (grown != topBarHeight) topBarHeight = grown
+                    },
+            ) {
             // 本栏只留透明容器，不叠加第二层玻璃；玻璃在外层 Column 上。
             // windowInsets 保持默认（状态栏）：外层 Box 没有 statusBarsPadding，
             // 状态栏高度由 TopAppBar 自身消化，与内容顶垫里的状态栏部分对齐。
@@ -130,6 +138,7 @@ fun AppPageScaffold(
                 glass = false,
             )
             GlassSignalLine(progress)
+            }
         }
     }
 }
@@ -160,14 +169,10 @@ fun AppTopBar(
 ) {
     val scheme = MaterialTheme.colorScheme
     val progress = (glassProgress ?: GlassScroll.progress).coerceIn(0f, 1f)
-    Column(modifier) {
+    // 顶栏本体（玻璃与否只差外壳，内容同一份）。
+    val topAppBar: @Composable () -> Unit = {
         TopAppBar(
-            modifier = Modifier.heightIn(min = LocalAppSizes.current.topBarHeight)
-                .then(if (glass) Modifier.glassBar(
-                    backdrop = LocalGlassBackdrop.current,
-                    alpha = 0.35f + progress * 0.35f,
-                    surface = scheme.surfaceContainer,
-                ) else Modifier),
+            modifier = Modifier.heightIn(min = LocalAppSizes.current.topBarHeight),
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
                 scrolledContainerColor = Color.Transparent,
@@ -190,7 +195,26 @@ fun AppTopBar(
             },
             actions = actions,
         )
-        // 信号细线：随滚动进度生长，2dp accent；无滚动时不画。
-        if (glass) GlassSignalLine(progress)
+    }
+    if (!glass) {
+        // 无玻璃时保持原样：本栏只留透明容器，玻璃由外层 overlay 的 Column 画。
+        Column(modifier) { topAppBar() }
+        return
+    }
+    // 浮动液态玻璃胶囊（帖子页顶栏）：外层 Box 留水平边距，内层 Column 才画玻璃
+    // （顶栏 + 信号细线都在胶囊内；边距在父级，玻璃按内层尺寸画）。
+    Box(modifier.padding(horizontal = LiquidGlassBarMargin)) {
+        Column(
+            Modifier.fillMaxWidth().glassBar(
+                backdrop = LocalGlassBackdrop.current,
+                alpha = 0.45f + progress * 0.25f,
+                surface = scheme.surfaceContainer,
+                blurRadius = 24.dp,
+            ),
+        ) {
+            topAppBar()
+            // 信号细线：随滚动进度生长，2dp accent；无滚动时不画。
+            GlassSignalLine(progress)
+        }
     }
 }
