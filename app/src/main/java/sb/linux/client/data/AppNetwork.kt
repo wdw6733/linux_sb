@@ -77,7 +77,9 @@ object AppNetwork {
                 scheduleAutomaticDoh()
             }
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                cancelTestsOnVpn()
+                // 网络回调也在主线程：cancelTestsOnVpn 会经 proxyConfig 重新解析（含 DNS/建连），
+                // 与 invalidate() 同理挪到维护线程（1.2.6）。
+                networkMaintenanceExecutor.execute { cancelTestsOnVpn() }
                 WebViewDohRefreshSignal.notifyPolicyChanged()
                 if (caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
                     if (validated != network) { validated = network; recoverySignal.tryEmit(Unit) }
@@ -231,10 +233,12 @@ object AppNetwork {
         ProxyRouter.invalidateCache()
         runtimeDohUrl.set(null)
         CronetTransport.invalidate()
-        // 设置监听器在主线程回调；evictAll/close 会写 socket（TLS close_notify），
-        // 必须挪到维护线程，否则 NetworkOnMainThreadException 直接闪退。
-        cancelTestsOnVpn()
+        // 设置监听器在主线程回调；cancelTestsOnVpn 会经 proxyConfig → ProxyRouter
+        // 重新解析（含 DNS/建连），evictAll/close 会写 socket（TLS close_notify），
+        // 都必须挪到维护线程，否则 NetworkOnMainThreadException 直接闪退
+        // （1.2.5 拨代理开关闪退的根因）。
         networkMaintenanceExecutor.execute {
+            cancelTestsOnVpn()
             connectionPool.evictAll()
             DnsCache.clear()
             val old = dohCache.values.toTypedArray()
